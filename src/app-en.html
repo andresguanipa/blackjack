@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Andres Guanipa">
+<meta name="copyright" content="© 2026 Andres Guanipa">
+<title>Hi-Lo Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Casino table: deep green felt, ivory cards, brass accent. Single theme by design. */
+  --felt:#0f3d2e;
+  --felt-deep:#0a2c21;
+  --ivory:#f6f1e4;
+  --brass:#d6a84a;
+  --ink:#e9efe9;
+  --muted:#9fb8ab;
+  --red:#c2373a;
+  --good:#5fd08a;
+  --bad:#ff7b6e;
+  --line:rgba(233,239,233,.14);
+  --display:"Playfair Display", Georgia, serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(ellipse at 50% 0%, #165440 0%, var(--felt) 45%, var(--felt-deep) 100%) fixed;
+  background-color:var(--felt);
+  color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  min-height:100%;
+}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--display);font-weight:800;font-size:30px;margin:0;letter-spacing:.2px;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(0,0,0,.22);padding:5px;border-radius:12px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(6px)}
+.tabs button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px var(--body);padding:10px 4px;border-radius:8px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--brass);color:#1d1606}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+section.panel{display:none;flex-direction:column;gap:16px}
+section.panel.on{display:flex}
+h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0;color:var(--brass);font-weight:600;letter-spacing:.3px}
+p{margin:0}
+.box{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.val{border-radius:10px;padding:10px 8px;text-align:center;border:1px solid var(--line)}
+.val b{display:block;font-family:var(--mono);font-size:24px}
+.val span{font-size:13px;color:var(--muted)}
+.val.p b{color:var(--good)} .val.z b{color:var(--ink)} .val.m b{color:var(--bad)}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:500}
+.note{font-size:13px;color:var(--muted)}
+
+/* Cartas */
+.table-area{min-height:190px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.card{width:104px;height:148px;border-radius:10px;background:var(--ivory);color:#1a1a1a;position:relative;box-shadow:0 6px 18px rgba(0,0,0,.35);font-family:var(--display);font-weight:800}
+.card.red{color:var(--red)}
+.card .c{position:absolute;font-size:20px;line-height:1;text-align:center}
+.card .tl{top:8px;left:8px}.card .br{bottom:8px;right:8px;transform:rotate(180deg)}
+.card .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:52px}
+.card.back{background:repeating-linear-gradient(45deg,#7a1f24 0 8px,#8f2a2f 8px 16px);border:5px solid var(--ivory)}
+.card.pop{animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateY(-14px) scale(.96);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.card.pop{animation:none}}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font:600 16px var(--body);padding:14px 16px;border-radius:12px;cursor:pointer;flex:1;min-width:0}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--brass);color:#1d1606;border-color:transparent}
+.btn.big{font-family:var(--mono);font-size:24px;padding:16px 8px}
+.btn.p{color:var(--good)} .btn.m{color:var(--bad)}
+.btn:disabled{opacity:.4;cursor:default}
+.stats{display:flex;gap:8px}
+.stat{flex:1;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.stat b{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.feedback{min-height:24px;text-align:center;font-weight:600}
+.feedback.ok{color:var(--good)} .feedback.no{color:var(--bad)}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+select{background:var(--felt-deep);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:500 15px var(--body)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .num{font-family:var(--mono);font-size:34px;min-width:90px;text-align:center;font-variant-numeric:tabular-nums}
+.stepper .btn{flex:0 0 60px;font-size:24px}
+.progress{height:6px;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--brass);transition:width .15s}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:13px;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.25);border:1px solid var(--line)}
+.chip.p{color:var(--good)} .chip.m{color:var(--bad)}
+.tray{display:flex;gap:16px;align-items:flex-end;justify-content:center}
+.stack{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.deckpile{width:70px;border-radius:6px;background:repeating-linear-gradient(0deg,var(--ivory) 0 2px,#cfc7b3 2px 3px);box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.rc{font-family:var(--mono);font-size:30px;color:var(--brass)}
+.grid-tc{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.grid-tc .btn{padding:12px 4px;font-family:var(--mono);font-size:18px}
+
+/* Jugar */
+.tabs{grid-template-columns:repeat(5,1fr)}
+#p-play{gap:12px}
+.gtop{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:stretch}
+.gstat{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.gstat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.gstat b{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.gstat.tc{border-color:rgba(214,168,74,.6)}
+.gstat.tc b{color:var(--brass)}
+.gleft{display:flex;gap:8px}
+.gleft .gstat{flex:1}
+.pill{appearance:none;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);border-radius:12px;padding:6px 12px;font:600 13px var(--body);cursor:pointer;white-space:nowrap}
+.gear{appearance:none;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);border-radius:12px;width:48px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gear svg{width:22px;height:22px}
+.gmeter{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.meter{position:relative;height:6px;background:rgba(0,0,0,.3);border-radius:4px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--brass);border-radius:4px;transition:width .3s}
+.meter em{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--red);border-radius:2px}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:6px;border-radius:4px;background:var(--brass)}
+.dots i.used{background:rgba(0,0,0,.35)}
+.dots i.maybe{background:transparent;border:1px dashed var(--brass);height:6px}
+
+.felt2{position:relative;border-radius:24px 24px 48% 48% / 24px 24px 90px 90px;background:radial-gradient(ellipse at 50% 30%,#1b6a50 0%,#11463a 60%,#0c3428 100%);border:2px solid rgba(214,168,74,.4);box-shadow:inset 0 0 40px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);padding:14px 10px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:340px;overflow:hidden}
+.zone{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.zlabel{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;letter-spacing:.4px;text-transform:uppercase}
+.zone.you .zlabel{color:var(--brass)}
+.tot{font-family:var(--mono);font-size:13px;color:var(--ink);background:rgba(0,0,0,.5);border-radius:999px;padding:2px 9px;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+.tot.bust{background:var(--red);color:#fff}
+.tot.bj{background:var(--brass);color:#1d1606}
+.gcards{display:flex;justify-content:center;min-height:94px;padding-left:30px}
+.gcards .gcard{margin-left:-30px}
+.card.gcard{width:66px;height:94px;border-radius:8px;box-shadow:-2px 3px 8px rgba(0,0,0,.4)}
+.card.gcard .c{font-size:15px}.card.gcard .tl{top:5px;left:6px}.card.gcard .br{bottom:5px;right:6px}
+.card.gcard .mid{font-size:30px}
+.card.gcard.back{border-width:4px}
+.print{font-family:var(--display);font-weight:600;color:rgba(214,168,74,.55);text-align:center;font-size:13px;letter-spacing:2px;line-height:1.4;pointer-events:none}
+.print small{font-family:var(--body);font-weight:500;letter-spacing:1px;font-size:10px;text-transform:uppercase}
+.ozone{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;width:100%}
+.ohand{display:flex;flex-direction:column;align-items:center;gap:4px}
+.oname{font-size:11px;color:var(--muted)}
+.ocards{display:flex;min-height:60px;padding-left:22px}
+.ocards .gcard{margin-left:-22px}
+.ocards .card.gcard{width:42px;height:60px;border-radius:6px}
+.ocards .card.gcard .c{font-size:10px}.ocards .card.gcard .tl{top:3px;left:4px}.ocards .card.gcard .br{bottom:3px;right:4px}
+.ocards .card.gcard .mid{font-size:18px}
+.ocards .card.gcard.back{border-width:3px}
+.tot.sm{font-size:11px;padding:1px 7px}
+.yourow{display:flex;align-items:center;gap:12px}
+.spot{width:60px;height:60px;border-radius:50%;border:2px dashed rgba(214,168,74,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;margin-top:2px}
+.spot b{font-family:var(--mono);font-size:15px;position:relative;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.spot b.empty{font:500 11px var(--body);color:var(--muted)}
+.cstack{position:absolute;left:50%;top:50%;width:40px;height:40px;transform:translate(-50%,-50%)}
+.disc{position:absolute;left:0;width:40px;height:40px;border-radius:50%;border:4px dashed rgba(255,255,255,.55);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.disc.c1{background:#e9e4d6;border-color:rgba(30,30,30,.35)}
+.disc.c2{background:#1f4e8f}
+.disc.c5{background:#a8282e}
+.card.deal{animation:deal .32s cubic-bezier(.2,.8,.3,1)}
+@keyframes deal{from{transform:translate(40px,-160px) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+.card.flip{animation:flip .3s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:none}}
+.banner{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);background:rgba(8,34,26,.94);border:1px solid var(--brass);border-radius:16px;padding:14px 20px;text-align:center;min-width:220px;max-width:88%;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:bannerIn .25s ease-out;z-index:3}
+.banner h3{font-family:var(--display);font-size:26px;margin:0;color:var(--ink);letter-spacing:0}
+.banner.win h3,.banner.bj h3{color:var(--good)}
+.banner.lose h3{color:var(--bad)}
+.banner p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+@keyframes bannerIn{from{opacity:0;transform:translate(-50%,-40%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%)}}
+@media (prefers-reduced-motion:reduce){.card.deal,.card.flip,.banner{animation:none}}
+
+.gcoach{display:flex;flex-direction:column;gap:8px}
+.fb{font-size:14px;border-radius:10px;padding:8px 12px;background:rgba(0,0,0,.25);border-left:3px solid var(--muted)}
+.fb.ok{border-left-color:var(--good)}
+.fb.no{border-left-color:var(--bad)}
+.coachbox{background:rgba(214,168,74,.1);border:1px solid rgba(214,168,74,.45);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.coachbox h4{margin:0;font:600 11px var(--body);color:var(--brass);letter-spacing:.6px;text-transform:uppercase}
+.coachbox .ch{font-weight:600;font-size:17px}
+.coachbox details{margin-top:2px}
+.coachbox summary{cursor:pointer;color:var(--brass);font-size:13px;font-weight:600}
+.coachbox details[open] summary{margin-bottom:8px}
+.coachbox .math{font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;line-height:1.6;margin-top:6px}
+.coachbox .chips .chip{font-size:11px;padding:2px 5px}
+.statline{text-align:center}
+
+.gbar{position:sticky;bottom:0;z-index:4;margin:0 -16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--felt-deep) 70%,rgba(10,44,33,0));display:flex;flex-direction:column;gap:10px}
+.gbar .row{flex-wrap:nowrap}
+.gbar .btn{padding:14px 8px}
+.btn kbd{display:none;font:500 11px var(--mono);opacity:.6;margin-left:6px;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+@media (hover:hover) and (pointer:fine){.btn kbd{display:inline}}
+.btn.rec{box-shadow:0 0 0 2px var(--brass);border-color:var(--brass)}
+.btn.ghost{background:transparent;flex:0 0 auto;font-size:14px;color:var(--brass);border-color:rgba(214,168,74,.4)}
+.chips3{display:flex;justify-content:center;gap:14px}
+.gchip{appearance:none;width:58px;height:58px;border-radius:50%;border:5px dashed rgba(255,255,255,.6);font:600 18px var(--mono);color:#fff;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.4)}
+.gchip.c1{background:#e9e4d6;color:#1a1a1a;border-color:rgba(30,30,30,.35)}
+.gchip.c2{background:#1f4e8f}
+.gchip.c5{background:#a8282e}
+.gchip:active{transform:translateY(2px)}
+.gchip:disabled{opacity:.3;cursor:default}
+.barhint{appearance:none;border:1px solid rgba(214,168,74,.45);background:rgba(214,168,74,.12);color:var(--ink);border-radius:10px;padding:8px 12px;font:500 14px var(--body);text-align:left;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.barhint b{color:var(--brass)}
+.barhint span{font-size:12px;color:var(--muted);white-space:nowrap}
+.barhint span.bh{font-size:14px;color:var(--ink);white-space:normal}
+.wait{text-align:center;color:var(--muted);padding:14px;font-size:14px}
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheetbox{background:var(--felt-deep);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:640px;padding:18px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:90%;overflow:auto}
+.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheethead .btn{flex:0 0 auto;padding:10px 16px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:rgba(0,0,0,.3);border-radius:12px;padding:4px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:10px 6px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brass);color:#1d1606}
+.seg button:disabled{opacity:.45;cursor:default}
+.seg.sm{min-width:150px}
+.seg.sm button{padding:8px 8px;font-size:13px}
+ul.errs{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;color:var(--ink);flex-direction:row;cursor:pointer}
+.switch small{display:block;color:var(--muted);font-size:12px}
+.switch input{width:22px;height:22px;accent-color:var(--brass);flex:0 0 auto}
+
+/* Compact table and split hands */
+body.playing header{display:none}
+body.playing .wrap{padding-top:10px;gap:10px}
+.gstat{padding:4px 10px}
+.gstat b{font-size:18px}
+.felt2{padding:10px 8px 14px;gap:8px;min-height:0}
+.print{font-size:11px;letter-spacing:1.5px}
+.print small{font-size:9px}
+@media (max-height:760px){.print small{display:none}}
+.gcards{min-height:82px;padding-left:26px}
+.gcards .gcard{margin-left:-26px}
+.card.gcard{width:58px;height:82px}
+.card.gcard .c{font-size:14px}
+.card.gcard .mid{font-size:26px}
+.ocards{min-height:54px;padding-left:20px}
+.ocards .gcard{margin-left:-20px}
+.ocards .card.gcard{width:38px;height:54px}
+.spot{width:48px;height:48px}
+.cstack{width:34px;height:34px}
+.disc{width:34px;height:34px;border-width:3px}
+.spot b{font-size:13px}
+.spot b.empty{font-size:9px}
+.hands{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;width:100%}
+.phand{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 4px 6px;border-radius:12px;border:2px solid transparent}
+.phand.active{border-color:var(--brass);background:rgba(214,168,74,.08)}
+.phand.done{opacity:.8}
+.hbet{font-size:11px;color:var(--muted)}
+.hands.many .card.gcard{width:44px;height:62px}
+.hands.many .card.gcard .c{font-size:11px}
+.hands.many .card.gcard .mid{font-size:20px}
+.hands.many .gcards{min-height:62px;padding-left:22px}
+.hands.many .gcards .gcard{margin-left:-22px}
+.gbar{padding:8px 16px calc(10px + env(safe-area-inset-bottom));gap:8px}
+.gbar .btn{padding:12px 6px;font-size:15px}
+.barhint{padding:6px 10px}
+.row.acts .btn{min-width:0}
+@media (max-width:480px){.row.acts:has(.btn:nth-child(4)) kbd{display:none}}
+.askrow{display:grid;grid-template-columns:56px 1fr 56px 1.4fr;gap:8px;align-items:center}
+.askrow .btn.step{font:600 24px var(--mono);padding:8px 0}
+.asknum{font:600 30px var(--mono);text-align:center;color:var(--brass);font-variant-numeric:tabular-nums}
+.chips3 .gchip{width:52px;height:52px}
+.credit{text-align:center;font-size:12px;color:var(--muted);padding:8px 0 4px;letter-spacing:.3px}
+.credit b{color:var(--brass);font-weight:600}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.seg.lang{min-width:0;flex:0 0 auto}
+.seg.lang button{padding:6px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="hrow"><h1>Hi-Lo Trainer</h1><div class="seg sm lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="es" aria-pressed="false">ES</button></div></div>
+    <p>Learn to count cards in blackjack, step by step: shoe and single deck.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="t-learn" aria-selected="true" data-p="learn">Learn</button>
+    <button role="tab" id="t-vals" aria-selected="false" data-p="vals">Values</button>
+    <button role="tab" id="t-run" aria-selected="false" data-p="run">Count</button>
+    <button role="tab" id="t-true" aria-selected="false" data-p="true">True</button>
+    <button role="tab" id="t-play" aria-selected="false" data-p="play">Play</button>
+  </nav>
+
+  <!-- LEARN -->
+  <section class="panel on" id="p-learn">
+    <div class="box">
+      <h3>1 · The value of each card</h3>
+      <div class="vals">
+        <div class="val p"><b>+1</b><span>2 3 4 5 6</span></div>
+        <div class="val z"><b>0</b><span>7 8 9</span></div>
+        <div class="val m"><b>−1</b><span>10 J Q K A</span></div>
+      </div>
+      <p class="note">Low cards help the dealer; high cards help you. When lots of low cards come out, the shoe is left rich in high cards and the count goes up.</p>
+    </div>
+
+    <div class="box">
+      <h3>2 · Running count</h3>
+      <p>Start at 0 after the shuffle. Add the value of every card you see: yours, the other players’ and the dealer’s. Example: 5, K, 3, 8, A → +1 −1 +1 0 −1 = <b>0</b>.</p>
+      <p class="note">Tip: cards that cancel out in pairs (one high, one low) don’t need to be added.</p>
+    </div>
+
+    <div class="box">
+      <h3>3 · True count</h3>
+      <p>A +6 is worth much more with 1 deck left than with 6 left. That’s why you divide:</p>
+      <p style="font-family:var(--mono);font-size:17px;text-align:center;color:var(--brass)">true count = running count ÷ decks remaining</p>
+      <p class="note">Estimate the decks remaining by looking at the discard tray: if a 6-deck shoe has 2 decks in the discard, about 4 are left. Round the result down.</p>
+    </div>
+
+    <div class="box">
+      <h3>4 · How much to bet</h3>
+      <table>
+        <thead><tr><th>True count</th><th>Bet</th></tr></thead>
+        <tbody>
+          <tr><td>+1 or less</td><td>Minimum (1 unit)</td></tr>
+          <tr><td>+2</td><td>2 units</td></tr>
+          <tr><td>+3</td><td>4 units</td></tr>
+          <tr><td>+4 or more</td><td>6–8 units</td></tr>
+        </tbody>
+      </table>
+      <p class="note">This is a sample bet ramp. One unit should be a small part of your total bankroll, because the swings are huge.</p>
+    </div>
+
+    <div class="box">
+      <h3>5 · Playing by the count</h3>
+      <p>Most of the time you play basic strategy. At certain true counts it pays to change the play:</p>
+      <table>
+        <thead><tr><th>Your hand vs dealer</th><th>Change it when the true count is…</th></tr></thead>
+        <tbody>
+          <tr><td>Insurance (dealer shows A)</td><td>+3 or more: take it (single deck: +2)</td></tr>
+          <tr><td>16 vs 10</td><td>0 or more: stand</td></tr>
+          <tr><td>15 vs 10</td><td>+4 or more: stand</td></tr>
+          <tr><td>12 vs 3 / 12 vs 2</td><td>+2 / +3 or more: stand</td></tr>
+          <tr><td>12 vs 4</td><td>negative: hit</td></tr>
+          <tr><td>11 vs A</td><td>+1 or more: double (single deck: always)</td></tr>
+          <tr><td>10 vs 10 / 10 vs A</td><td>+4 or more: double</td></tr>
+          <tr><td>9 vs 2 / 9 vs 7</td><td>+1 / +3 or more: double (single deck: 9 vs 2 always)</td></tr>
+        </tbody>
+      </table>
+      <p class="note">The Play tab grades every bet and every play using these rules.</p>
+    </div>
+
+    <div class="box">
+      <h3>Suggested order</h3>
+      <ol>
+        <li>Master basic strategy with no mistakes.</li>
+        <li>Practice the card values until they’re automatic.</li>
+        <li>Count down a full deck: it should end at 0. Goal: under 25 seconds.</li>
+        <li>Practice the true count and the bet.</li>
+      </ol>
+    </div>
+    <p class="note" style="text-align:center">Card counting is legal, but a casino can ask you to stop playing. Even done well, the edge is small and you can lose for a long time.</p>
+  </section>
+
+  <!-- VALUES -->
+  <section class="panel" id="p-vals">
+    <h2>What is this card worth?</h2>
+    <div class="stats">
+      <div class="stat"><span>Correct</span><b id="v-ok">0/0</b></div>
+      <div class="stat"><span>Streak</span><b id="v-streak">0</b></div>
+      <div class="stat"><span>Best streak</span><b id="v-best">0</b></div>
+    </div>
+    <div class="table-area" id="v-card"></div>
+    <div class="feedback" id="v-fb" aria-live="polite"></div>
+    <div class="row">
+      <button class="btn big p" data-v="1" id="v-plus">+1</button>
+      <button class="btn big" data-v="0" id="v-zero">0</button>
+      <button class="btn big m" data-v="-1" id="v-minus">−1</button>
+    </div>
+  </section>
+
+  <!-- RUNNING COUNT -->
+  <section class="panel" id="p-run">
+    <h2>Running count</h2>
+    <div class="seg" id="r-modeseg"><button data-m="auto" aria-pressed="true">Automatic</button><button data-m="clock" aria-pressed="false">Against the clock</button></div>
+    <p class="note" id="r-modenote">Cards come out on their own at the speed you choose.</p>
+    <div class="row">
+      <label for="r-n">Cards
+        <select id="r-n">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+          <option value="52">Full deck (52)</option>
+        </select>
+      </label>
+      <label for="r-speed" id="r-speed-l">Speed
+        <select id="r-speed">
+          <option value="1400">Slow</option>
+          <option value="900" selected>Medium</option>
+          <option value="550">Fast</option>
+          <option value="350">Casino</option>
+        </select>
+      </label>
+      <label for="r-group">Cards at a time
+        <select id="r-group">
+          <option value="1" selected>1 card</option>
+          <option value="2">2 cards</option>
+        </select>
+      </label>
+    </div>
+    <div class="stats" id="r-clockstats" style="display:none">
+      <div class="stat"><span>Time</span><b id="r-time">0.0 s</b></div>
+      <div class="stat"><span>Record · <span id="r-bestn">20</span></span><b id="r-best">–</b></div>
+      <div class="stat"><span>Goal</span><b id="r-goal">–</b></div>
+    </div>
+    <div class="progress"><i id="r-prog"></i></div>
+    <div class="table-area" id="r-card"><div class="card back"></div></div>
+    <div class="feedback" id="r-fb" aria-live="polite">Tap Deal and keep the count in your head.</div>
+    <button class="btn primary big" id="r-nextc" style="display:none">Next card</button>
+    <div id="r-answer" style="display:none;flex-direction:column;gap:12px;align-items:center">
+      <p>What’s the final count?</p>
+      <div class="stepper">
+        <button class="btn" id="r-dec" aria-label="Subtract one">−</button>
+        <div class="num" id="r-val">0</div>
+        <button class="btn" id="r-inc" aria-label="Add one">+</button>
+      </div>
+      <button class="btn primary" id="r-check" style="width:100%">Check</button>
+    </div>
+    <div id="r-detail" class="chips"></div>
+    <button class="btn primary" id="r-start">Deal</button>
+  </section>
+
+  <!-- TRUE COUNT -->
+  <section class="panel" id="p-true">
+    <h2>True count and bet</h2>
+    <div class="seg" id="t-modeseg"><button data-m="shoe" aria-pressed="true">Shoe · 6 decks</button><button data-m="single" aria-pressed="false">Single deck</button></div>
+    <p class="note" id="t-note">Look at the running count and how many decks are left, then pick the true count (rounded down).</p>
+    <div class="stats">
+      <div class="stat"><span>Correct</span><b id="t-ok">0/0</b></div>
+      <div class="stat"><span>Streak</span><b id="t-streak">0</b></div>
+    </div>
+    <div class="box" style="align-items:center">
+      <span class="note">Running count</span>
+      <div class="rc" id="t-rc">+0</div>
+      <div class="tray">
+        <div class="stack"><div class="deckpile" id="t-left"></div><span id="t-left-l">Left</span></div>
+        <div class="stack"><div class="deckpile" id="t-used" style="opacity:.55"></div><span id="t-used-l">Discard</span></div>
+      </div>
+    </div>
+    <div class="grid-tc" id="t-opts"></div>
+    <div class="feedback" id="t-fb" aria-live="polite"></div>
+    <button class="btn primary" id="t-next" style="display:none">Next</button>
+  </section>
+
+  <!-- PLAY -->
+  <section class="panel" id="p-play">
+    <div class="gtop">
+      <div class="gleft">
+        <div class="gstat"><span>Chips</span><b id="g-bank">200</b></div>
+        <div class="gstat tc" id="g-tc"><span>True count</span><b id="g-tcv">0</b></div>
+      </div>
+      <button class="pill" id="g-modepill" aria-label="Change table type">Shoe</button>
+      <button class="gear" id="g-gear" aria-label="Table settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.5" fill="currentColor"/><circle cx="15" cy="17" r="2.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="gmeter" id="g-meter"></div>
+
+    <div class="felt2">
+      <div class="zone dealer">
+        <div class="zlabel">Dealer <span class="tot" id="g-dtot"></span></div>
+        <div class="gcards" id="g-dz"></div>
+      </div>
+      <div class="print">BLACKJACK PAYS 3 TO 2<br><small>Dealer stands on all 17s</small></div>
+      <div class="ozone" id="g-oz"></div>
+      <div class="zone you">
+        <div class="hands" id="g-pz"></div>
+        <div class="yourow"><div class="spot" id="g-spot" aria-label="Your bet"></div><div class="zlabel">You <span class="tot" id="g-ptot"></span></div></div>
+      </div>
+      <div class="banner" id="g-banner" hidden></div>
+    </div>
+
+    <div class="gcoach" id="g-coach" aria-live="polite"></div>
+    <p class="note statline" id="g-statline"></p>
+    <div class="gbar" id="g-bar"></div>
+  </section>
+
+  <div class="sheet" id="g-sheet" hidden>
+    <div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="g-sheet-h">
+      <div class="sheethead"><h2 id="g-sheet-h">Table settings</h2><button class="btn primary" id="g-close">Done</button></div>
+      <div class="seg" id="g-modeseg"><button data-m="shoe">Shoe · 6 decks</button><button data-m="single">Single deck</button></div>
+      <p class="note" id="g-rules"></p>
+      <div class="setrow"><span>Other players</span><div class="seg sm" id="g-othseg"><button data-o="0">0</button><button data-o="1">1</button><button data-o="2">2</button><button data-o="3">3</button></div></div>
+      <div class="setrow"><span>Speed</span><div class="seg sm" id="g-speedseg"><button data-s="normal">Normal</button><button data-s="rapida">Fast</button><button data-s="casino">Casino</button></div></div>
+      <p class="note" id="g-locknote" hidden>Table type, players and language can only be changed between hands.</p>
+      <label class="switch" for="g-teach"><span>Teaching mode<small>Tells you what to bet and how to play at every moment, and why.</small></span><input type="checkbox" id="g-teach"></label>
+      <label class="switch" for="g-ask"><span>Ask for my count before betting<small>Before each hand you enter your true count and the app tells you if you got it right.</small></span><input type="checkbox" id="g-ask"></label>
+      <label class="switch" for="g-show"><span>Show true count<small>Use it to check yourself. At the casino you keep it in your head.</small></span><input type="checkbox" id="g-show"></label>
+      <div class="setrow lang"><span>Language</span><div class="seg sm lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="es" aria-pressed="false">ES</button></div></div>
+      <button class="btn" id="g-reset">Reset chips and stats</button>
+      <p class="note" style="text-align:center">Hi-Lo Trainer · © 2026 Andres Guanipa. All rights reserved.</p>
+    </div>
+  </div>
+
+  <footer class="credit">© 2026 <b>Andres Guanipa</b>. All rights reserved.</footer>
+</div>
+
+<script>
+(function(){
+  var RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  var SUITS=['♠','♥','♦','♣'];
+  function hilo(r){ if('23456'.indexOf(r)>=0 && r.length===1) return 1; if(r==='7'||r==='8'||r==='9') return 0; return -1; }
+  function rnd(n){ return Math.floor(Math.random()*n); }
+  function randomCard(){ return {r:RANKS[rnd(13)], s:SUITS[rnd(4)]}; }
+  function deck(){ var d=[]; RANKS.forEach(function(r){SUITS.forEach(function(s){d.push({r:r,s:s});});}); for(var i=d.length-1;i>0;i--){var j=rnd(i+1);var t=d[i];d[i]=d[j];d[j]=t;} return d; }
+  function cardEl(c){
+    var el=document.createElement('div');
+    el.className='card pop'+((c.s==='♥'||c.s==='♦')?' red':'');
+    el.setAttribute('role','img'); el.setAttribute('aria-label',c.r+' '+c.s);
+    el.innerHTML='<div class="c tl">'+c.r+'<br>'+c.s+'</div><div class="mid">'+c.s+'</div><div class="c br">'+c.r+'<br>'+c.s+'</div>';
+    return el;
+  }
+  function sign(n){ return (n>0?'+':n<0?'−':'')+Math.abs(n); }
+  function $(id){ return document.getElementById(id); }
+
+  /* Tabs */
+  var timer=null;
+  var tabs=document.querySelectorAll('.tabs button');
+  tabs.forEach(function(b){ b.addEventListener('click',function(){
+    tabs.forEach(function(x){x.setAttribute('aria-selected', x===b?'true':'false');});
+    document.querySelectorAll('section.panel').forEach(function(p){p.classList.toggle('on', p.id==='p-'+b.dataset.p);});
+    if(timer){ clearTimeout(timer); timer=null; resetRun(); } else if(run.active||run.tick) resetRun();
+  });});
+
+  /* Values */
+  var v={card:null,ok:0,tot:0,streak:0,best:0,lock:false};
+  function vNext(){ v.card=randomCard(); var a=$('v-card'); a.innerHTML=''; a.appendChild(cardEl(v.card)); v.lock=false; }
+  function vAnswer(val){
+    if(v.lock) return; v.lock=true;
+    var right=hilo(v.card.r); v.tot++;
+    var fb=$('v-fb');
+    if(val===right){ v.ok++; v.streak++; v.best=Math.max(v.best,v.streak); fb.className='feedback ok'; fb.textContent='Correct: '+v.card.r+' = '+sign(right); }
+    else { v.streak=0; fb.className='feedback no'; fb.textContent='No: '+v.card.r+' is worth '+sign(right); }
+    $('v-ok').textContent=v.ok+'/'+v.tot; $('v-streak').textContent=v.streak; $('v-best').textContent=v.best;
+    setTimeout(vNext, val===right?350:1100);
+  }
+  ['v-plus','v-zero','v-minus'].forEach(function(id){ $(id).addEventListener('click',function(){ vAnswer(parseInt(this.dataset.v,10)); }); });
+  vNext();
+
+  /* Running count */
+  var run={cards:[],i:0,count:0,guess:0,start:0,mode:'auto',active:false,elapsed:0,tick:null};
+  var GOAL={10:5,20:10,30:15,52:25};
+  function bestKey(n){ return 'hilo-best-'+n; }
+  function getBest(n){ try{ var v=parseFloat(localStorage.getItem(bestKey(n))); return isNaN(v)?null:v; }catch(e){ return null; } }
+  function setBest(n,v){ try{ localStorage.setItem(bestKey(n),String(v)); }catch(e){} }
+  function secs(v){ return v.toFixed(1)+' s'; }
+  function showClockStats(){
+    var n=parseInt($('r-n').value,10), b=getBest(n);
+    $('r-bestn').textContent=n; $('r-best').textContent=b==null?'–':secs(b); $('r-goal').textContent=GOAL[n]+' s';
+  }
+  function setRunMode(m){
+    run.mode=m;
+    document.querySelectorAll('#r-modeseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.m===m?'true':'false'); });
+    $('r-speed-l').style.display=m==='auto'?'':'none';
+    $('r-clockstats').style.display=m==='clock'?'':'none';
+    $('r-modenote').textContent=m==='auto'?'Cards come out on their own at the speed you choose.':'Tap the card (or the button) to flip the next one as fast as you can without losing the count. Goal for a full deck: 25 seconds.';
+    showClockStats(); resetRun();
+  }
+  document.querySelectorAll('#r-modeseg button').forEach(function(b){ b.addEventListener('click',function(){ if(!run.active) setRunMode(b.dataset.m); }); });
+  $('r-n').addEventListener('change',showClockStats);
+  function resetRun(){
+    run.active=false; if(run.tick){ clearInterval(run.tick); run.tick=null; }
+    $('r-card').innerHTML='<div class="card back"></div>';
+    $('r-answer').style.display='none'; $('r-start').style.display=''; $('r-nextc').style.display='none';
+    $('r-prog').style.width='0'; $('r-detail').innerHTML='';
+    $('r-fb').className='feedback'; $('r-fb').textContent='Tap Deal and keep the count in your head.';
+    $('r-time').textContent='0.0 s';
+  }
+  function showGroup(){
+    var group=parseInt($('r-group').value,10), area=$('r-card'); area.innerHTML='';
+    for(var k=0;k<group && run.i<run.cards.length;k++){ area.appendChild(cardEl(run.cards[run.i])); run.i++; }
+    $('r-prog').style.width=(run.i/run.cards.length*100)+'%';
+  }
+  function askAnswer(){
+    run.active=false; $('r-card').innerHTML='<div class="card back"></div>'; $('r-fb').textContent=''; $('r-nextc').style.display='none';
+    run.guess=0; $('r-val').textContent='0'; $('r-answer').style.display='flex';
+  }
+  function dealStep(){
+    var group=parseInt($('r-group').value,10), speed=parseInt($('r-speed').value,10);
+    showGroup();
+    if(run.i<run.cards.length){ timer=setTimeout(dealStep, speed*(group===2?1.4:1)); }
+    else { timer=setTimeout(function(){ timer=null; askAnswer(); }, speed); }
+  }
+  function clockNext(){
+    if(run.mode!=='clock'||!run.active) return;
+    if(run.i>=run.cards.length){
+      run.elapsed=(Date.now()-run.start)/1000; clearInterval(run.tick); run.tick=null; $('r-time').textContent=secs(run.elapsed);
+      askAnswer(); return;
+    }
+    showGroup();
+  }
+  $('r-card').addEventListener('click',clockNext);
+  $('r-nextc').addEventListener('click',clockNext);
+  $('r-start').addEventListener('click',function(){
+    var n=parseInt($('r-n').value,10);
+    var d=deck(); run.cards=d.slice(0,n); run.i=0;
+    run.count=run.cards.reduce(function(a,c){return a+hilo(c.r);},0);
+    $('r-start').style.display='none'; $('r-detail').innerHTML=''; $('r-answer').style.display='none';
+    $('r-fb').className='feedback'; run.active=true; run.start=Date.now();
+    if(run.mode==='clock'){
+      $('r-fb').textContent='Tap for the next card. After the last one, tap once more.';
+      $('r-nextc').style.display=''; showGroup();
+      run.tick=setInterval(function(){ $('r-time').textContent=secs((Date.now()-run.start)/1000); },100);
+    } else { $('r-fb').textContent='Counting…'; dealStep(); }
+  });
+  $('r-dec').addEventListener('click',function(){ run.guess--; $('r-val').textContent=sign(run.guess); });
+  $('r-inc').addEventListener('click',function(){ run.guess++; $('r-val').textContent=sign(run.guess); });
+  $('r-check').addEventListener('click',function(){
+    var fb=$('r-fb'), n=run.cards.length, ok=run.guess===run.count, extra='';
+    if(run.mode==='clock'){
+      var b=getBest(n), goal=GOAL[n];
+      extra=' Time: '+secs(run.elapsed)+'.';
+      if(ok){
+        if(b==null||run.elapsed<b){ setBest(n,run.elapsed); extra+=' New record!'; }
+        extra+= run.elapsed<=goal? ' You beat the '+goal+' s goal.' : ' Goal: '+goal+' s.';
+      } else extra+=' The time doesn’t count as a record when the count is wrong.';
+      showClockStats();
+    }
+    if(ok){ fb.className='feedback ok'; fb.textContent='Exactly! The count was '+sign(run.count)+(n===52?' (a full deck always ends at 0).':'.')+extra; }
+    else { fb.className='feedback no'; fb.textContent='You said '+sign(run.guess)+'; it was '+sign(run.count)+'. Check the sequence below.'+extra; }
+    var det=$('r-detail'); det.innerHTML=''; var acc=0;
+    run.cards.forEach(function(c){ var h=hilo(c.r); acc+=h; var s=document.createElement('span'); s.className='chip'+(h>0?' p':h<0?' m':''); s.textContent=c.r+' → '+sign(acc); det.appendChild(s); });
+    $('r-answer').style.display='none'; $('r-start').style.display=''; $('r-start').textContent='Deal again';
+  });
+  showClockStats();
+
+  /* True count */
+  var t={rc:0,decks:0,ok:0,tot:0,streak:0,mode:'shoe'};
+  function betFor(tc){ if(tc<=1) return '1 unit (minimum)'; if(tc===2) return '2 units'; if(tc===3) return '4 units'; if(tc===4) return '6 units'; return '8 units'; }
+  function dstr(d){ return String(d); }
+  function deckWord(d){ return dstr(d)+(d===1?' deck':' decks'); }
+  document.querySelectorAll('#t-modeseg button').forEach(function(b){ b.addEventListener('click',function(){
+    t.mode=b.dataset.m; document.querySelectorAll('#t-modeseg button').forEach(function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); });
+    $('t-note').textContent=t.mode==='shoe'?'Look at the running count and how many decks are left, then pick the true count (rounded down).':'One deck: think in quarters. With ¾ of a deck left, divide by 0.75; with half a deck, by 0.5 (the same as multiplying by 2).';
+    tNext();
+  }); });
+  function tNext(){
+    var single=t.mode==='single', options=single?[0.75,0.5]:[1,1.5,2,2.5,3,3.5,4,4.5,5], total=single?1:6, tc, tries=0;
+    do{
+      t.decks=options[rnd(options.length)];
+      var tcTarget=rnd(9)-2;
+      t.rc=Math.round(tcTarget*t.decks + (Math.random()*t.decks*0.9));
+      if(t.rc===0) t.rc=rnd(2)?1:-1;
+      tc=Math.floor(t.rc/t.decks); tries++;
+    } while((tc<-3||tc>6)&&tries<50);
+    $('t-rc').textContent=sign(t.rc);
+    var used=total-t.decks, scale=single?70:18;
+    $('t-left').style.height=Math.max(6,t.decks*scale)+'px';
+    $('t-used').style.height=Math.max(6,used*scale)+'px';
+    if(single){
+      $('t-left-l').textContent='~'+Math.round(t.decks*52)+' cards left ('+dstr(t.decks)+')';
+      $('t-used-l').textContent='Discard: ~'+Math.round(used*52)+' cards';
+    } else {
+      $('t-left-l').textContent='~'+deckWord(t.decks)+' left';
+      $('t-used-l').textContent='Discard: '+deckWord(used);
+    }
+    var opts=$('t-opts'); opts.innerHTML='';
+    for(var k=-3;k<=6;k++){ var b=document.createElement('button'); b.className='btn'+(k>0?' p':k<0?' m':''); b.textContent=sign(k); b.dataset.v=k; b.addEventListener('click',tAnswer); opts.appendChild(b); }
+    $('t-fb').textContent=''; $('t-fb').className='feedback'; $('t-next').style.display='none';
+  }
+  function tAnswer(){
+    var tc=Math.floor(t.rc/t.decks); var gv=parseInt(this.dataset.v,10);
+    t.tot++;
+    var exact=(t.rc/t.decks).toFixed(2);
+    var fb=$('t-fb');
+    if(gv===tc){ t.ok++; t.streak++; fb.className='feedback ok'; fb.textContent='Correct: '+sign(t.rc)+' ÷ '+dstr(t.decks)+' = '+exact+' → '+sign(tc)+'. Bet: '+betFor(tc)+'.'; }
+    else { t.streak=0; fb.className='feedback no'; fb.textContent='It was '+sign(tc)+': '+sign(t.rc)+' ÷ '+dstr(t.decks)+' = '+exact+', rounded down. Bet: '+betFor(tc)+'.'; }
+    $('t-ok').textContent=t.ok+'/'+t.tot; $('t-streak').textContent=t.streak;
+    document.querySelectorAll('#t-opts .btn').forEach(function(b){ b.disabled=true; });
+    $('t-next').style.display='';
+  }
+  $('t-next').addEventListener('click',tNext);
+  tNext();
+
+  /* ===== Play ===== */
+  var MODES={
+    shoe:{name:'Shoe · 6 decks',decks:6,pen:0.75,dblAny:true,das:true,ins:3,step:2,
+      rules:'6 decks · pays 3 to 2 · dealer stands on soft 17 · double on any two cards, including after splitting · split pairs up to 4 hands (split Aces get one card each) · reshuffle at the cut card (75% of the shoe) and burn the first card.'},
+    single:{name:'Single deck',decks:1,pen:1,dblAny:false,das:false,ins:2,step:4,
+      rules:'1 deck · pays 3 to 2 · dealer stands on soft 17 · double on 9, 10 or 11 only, not after splitting · split pairs up to 4 hands (split Aces get one card each) · the dealer reshuffles based on how many cards have come out: alone, after 3–5 hands; with 2 players, after 3–4; with 3 or 4, after 2–3. The first card is burned. As in a casino, the other players’ first two cards are dealt face down: you only see them when they bust, have blackjack or at the end of the hand.'}
+  };
+  var store={
+    get:function(){ try{ return JSON.parse(localStorage.getItem('hilo-game')||'{}')||{}; }catch(e){ return {}; } },
+    set:function(o){ try{ localStorage.setItem('hilo-game',JSON.stringify(o)); }catch(e){} }
+  };
+  var saved=store.get();
+  function zeroStats(){ return {hands:0,net:0,betOk:0,betTot:0,playOk:0,playTot:0,cntOk:0,cntTot:0}; }
+  var S={mode:MODES[saved.mode]?saved.mode:'shoe', others:[0,1,2,3].indexOf(saved.others)>=0?saved.others:1,
+    teach:saved.teach!==false, show:!!saved.show, ask:saved.ask!==false, speed:['normal','rapida','casino'].indexOf(saved.speed)>=0?saved.speed:'normal'};
+  var SPEEDS={normal:380,rapida:230,casino:130};
+  var R=MODES[S.mode], SHOE=R.decks*52;
+  var g={bank:(typeof saved.bank==='number'&&saved.bank>=1)?saved.bank:200,
+    st:(saved.st&&typeof saved.st.hands==='number')?saved.st:zeroStats(),
+    shoe:[],pos:0,cut:0,rc:0,seen:[],rounds:0,dealer:[],hands:[],cur:0,others:[],hole:true,
+    pending:0,lastBet:0,ins:0,before:0,phase:'bet',fb:[],result:null,hint:false,shuffleMsg:'',guess:0,asked:false};
+  if(typeof g.st.cntTot!=='number'){ g.st.cntOk=0; g.st.cntTot=0; }
+  function save(){ store.set({mode:S.mode,others:S.others,teach:S.teach,show:S.show,ask:S.ask,speed:S.speed,bank:g.bank,st:g.st}); }
+  var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, reduceMotion?0:ms); }); }
+  var D=SPEEDS[S.speed];
+
+  function cval(r){ if(r==='A') return 1; if(r==='J'||r==='Q'||r==='K') return 10; return parseInt(r,10); }
+  function total(c){ var s=0,a=false; c.forEach(function(x){ s+=cval(x.r); if(x.r==='A') a=true; }); var soft=a&&s+10<=21; return {t:soft?s+10:s, soft:soft}; }
+  function isBJ(c){ return c.length===2 && total(c).t===21; }
+  function natural(h){ return !h.split && isBJ(h.c); }
+  function upVal(){ var r=g.dealer[0].r; return r==='A'?11:cval(r); }
+  function upName(){ var u=upVal(); return u===11?'A':String(u); }
+  function cur(){ return g.hands[g.cur]; }
+  function totalBet(){ return g.hands.reduce(function(a,h){ return a+h.bet; },0); }
+  function newShoe(){
+    SHOE=R.decks*52; var s=[]; for(var k=0;k<R.decks;k++) s=s.concat(deck());
+    for(var i=s.length-1;i>0;i--){ var j=rnd(i+1); var x=s[i]; s[i]=s[j]; s[j]=x; }
+    g.shoe=s; g.pos=1; g.cut=Math.floor(SHOE*R.pen); g.rc=0; g.seen=[]; g.rounds=0; pickTarget();
+    g.ss={hands:0,net:0,betOk:0,betTot:0,playOk:0,playTot:0,cntOk:0,cntTot:0,errs:[]};
+  }
+  function draw(vis){
+    if(g.pos>=g.shoe.length){ g.shoe=g.shoe.concat(deck()); SHOE=g.shoe.length; }
+    var c=g.shoe[g.pos++]; if(vis!==false){ g.rc+=hilo(c.r); g.seen.push(c); } return c;
+  }
+  function revealHole(){ g.hole=false; var c=g.dealer[1]; c._flip=true; g.rc+=hilo(c.r); g.seen.push(c); }
+  function decksLeft(){ return Math.max(0.5, Math.round((SHOE-g.pos)/52*R.step)/R.step); }
+  function tcExact(){ return g.rc/decksLeft(); }
+  function tcNow(){ return Math.floor(tcExact()); }
+  function recBet(tc){ if(tc<=1) return 1; if(tc===2) return 2; if(tc===3) return 4; if(tc===4) return 6; return 8; }
+  function players(){ return 1+S.others; }
+  // Single deck: the dealer reshuffles based on cards dealt, within a range of hands per number of players.
+  var SD={1:{min:3,max:5,a:14,b:28},2:{min:3,max:4,a:20,b:30},3:{min:2,max:3,a:17,b:27},4:{min:2,max:3,a:23,b:31}};
+  function sdr(){ return SD[players()]; }
+  function pickTarget(){ var r=sdr(); g.target=r.a+rnd(r.b-r.a+1); }
+  function needShuffle(){
+    if(R.decks===1){ var r=sdr(), left=SHOE-g.pos;
+      return g.rounds>=r.max || (g.rounds>=r.min && g.pos>=g.target) || left<players()*3+10; }
+    return g.pos>=g.cut;
+  }
+  function canDouble(h){
+    if(!h||h.c.length!==2||h.aces||g.bank<h.bet) return false;
+    if(h.split&&!R.das) return false;
+    if(R.dblAny) return true;
+    var o=total(h.c); return !o.soft&&o.t>=9&&o.t<=11;
+  }
+  function canSplit(h){
+    return !!h && h.c.length===2 && !h.aces && cval(h.c[0].r)===cval(h.c[1].r) && g.hands.length<4 && g.bank>=h.bet;
+  }
+  var NAMES={H:'Hit',S:'Stand',D:'Double',P:'Split'};
+  function pairName(c){ var v=cval(c.r); return v===1?'Aces':v===10?'tens':v+'s'; }
+
+  function strategy(cards,d,tc,canD,canP){
+    var up=d===11?'A':d;
+    if(canP){
+      var v=cval(cards[0].r), p=false, dev=null;
+      if(v===1||v===8) p=true;
+      else if(v===10){ if(d===5&&tc>=5) dev='Pair of tens vs 5 at true count +5 or more: split.'; else if(d===6&&tc>=4) dev='Pair of tens vs 6 at true count +4 or more: split.'; }
+      else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
+      else if(v===7) p=d<=7;
+      else if(v===6) p=R.das? d<=6 : (d>=3&&d<=6);
+      else if(v===4) p=R.das&&(d===5||d===6);
+      else if(v===3) p=R.das? d<=7 : (d>=4&&d<=7);
+      else if(v===2) p=R.das? d<=7 : (d>=3&&d<=7);
+      if(dev) return {a:'P',why:dev,dev:true,pair:true};
+      if(p) return {a:'P',why:'Basic strategy: pair of '+pairName(cards[0])+' vs '+up+' → Split.',pair:true};
+    }
+    var o=total(cards), t=o.t, a=null, why=null, SDk=R.decks===1;
+    if(!o.soft){
+      if(t===16&&d===10&&tc>=0){a='S';why='16 vs 10 at true count 0 or more: stand.';}
+      else if(t===16&&d===9&&tc>=5){a='S';why='16 vs 9 at true count +5 or more: stand.';}
+      else if(t===15&&d===10&&tc>=4){a='S';why='15 vs 10 at true count +4 or more: stand.';}
+      else if(t===12&&d===3&&tc>=2){a='S';why='12 vs 3 at true count +2 or more: stand.';}
+      else if(t===12&&d===2&&tc>=3){a='S';why='12 vs 2 at true count +3 or more: stand.';}
+      else if(t===12&&d===4&&tc<0){a='H';why='12 vs 4 at a negative true count: hit.';}
+      else if(t===12&&d===5&&tc<-2){a='H';why='12 vs 5 at true count −3 or less: hit.';}
+      else if(t===12&&d===6&&tc<-1){a='H';why='12 vs 6 at true count −2 or less: hit.';}
+      else if(t===13&&d===2&&tc<-1){a='H';why='13 vs 2 at true count −2 or less: hit.';}
+      else if(t===13&&d===3&&tc<-2){a='H';why='13 vs 3 at true count −3 or less: hit.';}
+      else if(!SDk&&canD&&t===11&&d===11&&tc>=1){a='D';why='11 vs A at true count +1 or more: double.';}
+      else if(canD&&t===10&&d===10&&tc>=4){a='D';why='10 vs 10 at true count +4 or more: double.';}
+      else if(canD&&t===10&&d===11&&tc>=4){a='D';why='10 vs A at true count +4 or more: double.';}
+      else if(!SDk&&canD&&t===9&&d===2&&tc>=1){a='D';why='9 vs 2 at true count +1 or more: double.';}
+      else if(canD&&t===9&&d===7&&tc>=3){a='D';why='9 vs 7 at true count +3 or more: double.';}
+      if(a) return {a:a,why:why,dev:true};
+      if(t>=17) a='S';
+      else if(t>=13) a=d<=6?'S':'H';
+      else if(t===12) a=(d>=4&&d<=6)?'S':'H';
+      else if(t===11) a=(d<=10||SDk)?'D':'H';
+      else if(t===10) a=d<=9?'D':'H';
+      else if(t===9) a=((d>=3&&d<=6)||(SDk&&d===2))?'D':'H';
+      else a='H';
+      if(a==='D'&&!canD) a='H';
+      return {a:a,why:'Basic strategy: hard '+t+' vs '+up+' → '+NAMES[a]+'.'};
+    }
+    if(t>=19) a='S';
+    else if(t===18) a=(d>=3&&d<=6)?'D':(d<=8?'S':'H');
+    else if(t===17) a=(d>=3&&d<=6)?'D':'H';
+    else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
+    else a=(d>=5&&d<=6)?'D':'H';
+    if(a==='D'&&!canD) a=(t===18)?'S':'H';
+    return {a:a,why:'Basic strategy: soft '+t+' vs '+up+' → '+NAMES[a]+'.'};
+  }
+  function recFor(h){ return strategy(h.c,upVal(),tcNow(),canDouble(h),canSplit(h)); }
+
+  /* --- Coach texts --- */
+  function esc(s){ return String(s).replace(/[&<>]/g,function(x){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x]; }); }
+  function dk(d){ return String(d); }
+  function fmt(n){ return String(Math.round(n*10)/10); }
+  function pct(a,b){ return b? Math.round(a/b*100)+'%' : '–'; }
+  function seenChips(){
+    if(!g.seen.length) return '<p>Just shuffled: no cards have come out yet.</p>';
+    var out='', lo=0, hi=0;
+    g.seen.forEach(function(c){ var h=hilo(c.r); if(h>0) lo++; if(h<0) hi++; out+='<span class="chip'+(h>0?' p':h<0?' m':'')+'">'+c.r+' '+(h>0?'+1':h<0?'−1':'0')+'</span>'; });
+    return '<p>Since the shuffle, '+g.seen.length+' cards have come out: '+lo+' low (2–6), '+hi+' high (10–A) and '+(g.seen.length-lo-hi)+' neutral.</p><div class="chips">'+out+'</div>';
+  }
+  function tcMath(){
+    var left=SHOE-g.pos, d=decksLeft(), ex=g.rc/d;
+    return '<div class="math">Sum of cards seen: '+sign(g.rc)+'<br>Cards still to come: '+left+' ≈ '+dk(d)+(d===1?' deck':' decks')+'<br>True count = '+sign(g.rc)+' ÷ '+dk(d)+' = '+ex.toFixed(2)+' → <b>'+sign(Math.floor(ex))+'</b></div>';
+  }
+  function details(open){ return '<details'+(open?' open':'')+'><summary>Where does this number come from?</summary>'+seenChips()+tcMath()+'</details>'; }
+  function betReason(tc){
+    if(tc<=0) return 'More high cards than low ones have come out, or they’re even. What’s left favors the dealer: bet the minimum.';
+    if(tc===1) return 'Slightly better, but the house still has the edge. Stay at the minimum.';
+    if(tc===2) return 'More 10s and Aces than usual are left: more blackjacks for you and more dealer busts. You now have a small edge.';
+    if(tc===3) return 'The deck is fairly rich in high cards. A clear edge for you.';
+    return 'The deck is loaded with high cards. This is the best time to bet big.';
+  }
+  function playReason(rec,h,d){
+    var cards=h.c, o=total(cards), t=o.t, up=d===11?'A':d;
+    var pair=cards.length===2&&cval(cards[0].r)===cval(cards[1].r), v=cval(cards[0].r);
+    if(rec.a==='P'){
+      if(rec.dev) return rec.why+' With so many high cards still to come, each hand starting with a 10 has great odds against a weak dealer.';
+      if(v===1) return 'Two Aces together are a weak soft 12. Split, each one can become 21 with a 10. Always split them.';
+      if(v===8) return '16 is the worst hand in blackjack. Two hands starting with an 8 are much better. Always split them.';
+      if(v===9) return '18 doesn’t beat what a '+up+' usually makes. Two hands starting with a 9 have a better chance.';
+      return 'Against a '+up+' it pays to turn this hand into two: each starts with a decent card and the dealer is likely to bust.';
+    }
+    if(pair&&canSplit(h)){
+      if(v===10) return '20 is excellent: don’t break up a winning hand. '+(rec.a==='S'?'Stand.':'');
+      if(v===5) return 'Two fives make 10, a great hand to double or hit. Never split them.';
+    }
+    if(rec.dev) return rec.why+' The count changes the usual play: '+(tcNow()>0?'lots of high cards are left, so the dealer busts more and you get more tens.':'lots of low cards are left, so hitting is less dangerous.');
+    if(rec.a==='D') return 'With '+t+' against a '+up+' you have the edge: a 10 or a face card leaves you very strong. Doubling lets you win twice as much right when it suits you most.';
+    if(o.soft&&rec.a==='H') return 'Your hand is soft (the Ace can count as 1), so hitting can’t take you over 21. A soft '+t+' isn’t enough against a '+up+'.';
+    if(o.soft&&rec.a==='S') return 'A soft '+t+' is already a good hand against a '+up+'.';
+    if(rec.a==='S'&&t>=17) return t+' is a strong hand: if you hit, you’ll most likely bust.';
+    if(rec.a==='S') return 'The dealer shows a '+up+', a low card: they have to hit and bust very often. Let them take the risk.';
+    if(rec.a==='H'&&t<=11) return 'With '+t+' no card can bust you. Always hit.';
+    return 'The dealer shows a '+up+': they will most likely reach 17 or more. Standing on '+t+' almost surely loses, so hit even though you might bust.';
+  }
+
+  /* --- Render --- */
+  function mk(label,cls,fn,dis,key){
+    var b=document.createElement('button'); b.className='btn '+(cls||''); b.textContent=label;
+    if(key){ var k=document.createElement('kbd'); k.textContent=key; b.appendChild(k); }
+    if(dis) b.disabled=true; b.addEventListener('click',fn); return b;
+  }
+  function gCard(c,back){
+    var e;
+    if(back){ e=document.createElement('div'); e.className='card gcard back'; e.setAttribute('role','img'); e.setAttribute('aria-label','face-down card'); }
+    else { e=cardEl(c); e.classList.remove('pop'); e.classList.add('gcard'); if(c._flip){ e.classList.add('flip'); c._flip=false; } }
+    if(!c._shown){ e.classList.add('deal'); c._shown=true; }
+    return e;
+  }
+  function handTot(cards,hidden,nat){
+    if(!cards.length) return '';
+    if(hidden) return upName();
+    if(nat&&isBJ(cards)) return 'Blackjack';
+    var o=total(cards); if(o.t>21) return o.t+' · bust';
+    return (o.soft&&o.t<21)? (o.t-10)+' / '+o.t : String(o.t);
+  }
+  function setTot(e,cards,hidden,nat){
+    var tx=handTot(cards,hidden,nat); e.textContent=tx; e.style.visibility=tx?'visible':'hidden';
+    var t=cards.length?total(cards).t:0;
+    e.classList.toggle('bust',!hidden&&t>21); e.classList.toggle('bj',!hidden&&!!nat&&isBJ(cards));
+  }
+  function renderTop(){
+    $('g-bank').textContent=fmt(g.bank);
+    $('g-tc').style.display=(S.show&&g.phase!=='ask')?'':'none';
+    $('g-tcv').textContent=sign(tcNow());
+    $('g-modepill').textContent=R.name;
+    var m=$('g-meter');
+    if(R.decks===1){
+      var rr=sdr(), dots='';
+      for(var i=0;i<rr.max;i++) dots+='<i class="'+(i<g.rounds?'used':(i>=rr.min?'maybe':''))+'"></i>';
+      m.innerHTML='<span>'+(SHOE-g.pos)+' cards left · reshuffle after '+rr.min+'–'+rr.max+' hands</span><div class="dots">'+dots+'</div>';
+    } else {
+      var p=Math.min(100,g.pos/SHOE*100);
+      m.innerHTML='<span>Shoe played '+Math.round(p)+'% · ~'+dk(decksLeft())+' decks left</span><div class="meter"><i style="width:'+p+'%"></i><em style="left:75%"></em></div>';
+    }
+    $('g-statline').textContent='Hands '+g.st.hands+' · Net '+(g.st.net>=0?'+':'−')+fmt(Math.abs(g.st.net))+' · Count '+pct(g.st.cntOk,g.st.cntTot)+' · Bets '+pct(g.st.betOk,g.st.betTot)+' · Plays '+pct(g.st.playOk,g.st.playTot);
+  }
+  function renderTable(){
+    var dz=$('g-dz'); dz.innerHTML='';
+    g.dealer.forEach(function(c,i){ dz.appendChild(gCard(c,i===1&&g.hole)); });
+    setTot($('g-dtot'),g.dealer,g.hole,true);
+    var oz=$('g-oz'); oz.innerHTML='';
+    g.others.forEach(function(h,i){
+      var w=document.createElement('div'); w.className='ohand';
+      var cs=document.createElement('div'); cs.className='ocards'; h.forEach(function(c){ cs.appendChild(gCard(c,c._down)); });
+      var tb=document.createElement('span'); tb.className='tot sm';
+      var hid=h.some(function(c){ return c._down; });
+      if(hid){ tb.textContent='?'; tb.style.visibility=h.length?'visible':'hidden'; tb.classList.remove('bust','bj'); } else setTot(tb,h,false,true);
+      var nm=document.createElement('div'); nm.className='oname'; nm.textContent='Player '+(i+1);
+      w.appendChild(cs); w.appendChild(tb); w.appendChild(nm); oz.appendChild(w);
+    });
+    oz.style.display=g.others.length?'':'none';
+    var pz=$('g-pz'), multi=g.hands.length>1; pz.innerHTML='';
+    pz.classList.toggle('many',g.hands.length>2);
+    if(!g.hands.length){ var e=document.createElement('div'); e.className='gcards'; pz.appendChild(e); }
+    g.hands.forEach(function(h,i){
+      var w=document.createElement('div'); w.className='phand'+(multi&&g.phase==='play'&&i===g.cur?' active':'')+(multi&&h.done?' done':'');
+      var cs=document.createElement('div'); cs.className='gcards'; h.c.forEach(function(c){ cs.appendChild(gCard(c)); }); w.appendChild(cs);
+      if(multi){
+        var tb=document.createElement('span'); tb.className='tot'; setTot(tb,h.c,false,false); w.appendChild(tb);
+        var bt=document.createElement('span'); bt.className='hbet'; bt.textContent='Hand '+(i+1)+' · '+fmt(h.bet)+(h.dbl?' (doubled)':''); w.appendChild(bt);
+      }
+      pz.appendChild(w);
+    });
+    document.querySelector('.yourow').style.display=multi?'none':'';
+    var pt=$('g-ptot');
+    if(multi){ pt.textContent=g.hands.length+' hands'; pt.style.visibility='visible'; pt.classList.remove('bust','bj'); }
+    else if(g.hands.length) setTot(pt,g.hands[0].c,false,natural(g.hands[0]));
+    else { pt.textContent=''; pt.style.visibility='hidden'; }
+    var amt=(g.phase==='bet'||g.phase==='ask')?g.pending:totalBet(), spot=$('g-spot'); spot.innerHTML='';
+    if(amt){
+      var st=document.createElement('div'), rem=amt, discs=[]; st.className='cstack';
+      [5,2,1].forEach(function(u){ while(rem>=u){ discs.push(u); rem-=u; } });
+      discs.slice(0,8).forEach(function(u,i){ var d=document.createElement('i'); d.className='disc c'+u; d.style.top=(-i*3)+'px'; st.appendChild(d); });
+      spot.appendChild(st);
+    }
+    var b=document.createElement('b'); if(amt) b.textContent=fmt(amt); else { b.className='empty'; b.textContent='Bet'; } spot.appendChild(b);
+  }
+  function renderBanner(){
+    var bn=$('g-banner'), r=g.result;
+    if(g.phase==='done'&&r){
+      var title = r.kind==='bj'?'Blackjack +'+fmt(r.net) : r.net>0?'You win +'+fmt(r.net) : r.net<0?'You lose −'+fmt(Math.abs(r.net)) : 'Push';
+      var kind = r.kind==='bj'?'bj' : r.net>0?'win' : r.net<0?'lose' : 'push';
+      bn.className='banner '+kind; bn.innerHTML='<h3>'+title+'</h3><p>'+esc(r.text)+'</p>'; bn.hidden=false;
+    } else if(g.phase==='shuffle'){
+      bn.className='banner'; bn.innerHTML='<h3>Shuffling</h3><p>'+esc(g.shuffleMsg)+'</p>'; bn.hidden=false;
+      if(g.ss){ var qq=g.ss, tt2=qq.betTot+qq.playTot+qq.cntTot; bn.innerHTML+='<p><b>Accuracy this shoe: '+pct(qq.betOk+qq.playOk+qq.cntOk,tt2)+'</b></p>'; }
+    } else if(g.phase==='broke'){
+      bn.className='banner lose'; bn.innerHTML='<h3>Out of chips</h3><p>That’s variance: it happens even when you count well.</p>'; bn.hidden=false;
+    } else bn.hidden=true;
+  }
+  function renderCoach(){
+    var c=$('g-coach'), T=S.teach||g.hint, html='';
+    var fb=g.fb.map(function(f){ return f.info? '<div class="fb">'+esc(f.t)+'</div>' : '<div class="fb '+(f.ok?'ok':'no')+'">'+(f.ok?'✓ ':'✗ ')+esc(f.t)+'</div>'; }).join('');
+    if(g.phase==='shuffle'&&g.ss){
+      var q=g.ss, tot=q.betTot+q.playTot+q.cntTot, ok=q.betOk+q.playOk+q.cntOk;
+      var rows='<div class="math">Hands: '+q.hands+' · Net: '+(q.net>=0?'+':'−')+fmt(Math.abs(q.net))+'<br>Count: '+q.cntOk+'/'+q.cntTot+' · Bets: '+q.betOk+'/'+q.betTot+' · Plays: '+q.playOk+'/'+q.playTot+'</div>';
+      var errs=q.errs.length? '<p><b>Your mistakes this shoe:</b></p><ul class="errs">'+q.errs.slice(0,8).map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+(q.errs.length>8?'<p class="note">and '+(q.errs.length-8)+' more.</p>':'') : '<p>No mistakes this shoe. Well done!</p>';
+      c.innerHTML='<div class="coachbox"><h4>Shoe summary</h4><div class="ch">Accuracy '+pct(ok,tot)+'</div>'+rows+errs+'<p class="note">After the shuffle, the count goes back to 0.</p></div>'; c.style.display=''; return;
+    }
+    if(g.phase==='ask'){
+      html='<div class="ch">What’s your true count?</div><p>Add up the cards you’ve seen since the shuffle and divide by the decks left ('+(R.decks===1?'in quarters: 0.75 or 0.5':'in halves: 4.5 · 4 · 3.5…')+'). Round down.</p>';
+      c.innerHTML='<div class="coachbox"><h4>Your turn to count</h4>'+html+'</div>'+fb; c.style.display=''; return;
+    }
+    if(T){
+      if(g.phase==='bet'){
+        var tc=tcNow(), rb=recBet(tc);
+        var ctx=R.decks===1?' Hand '+(g.rounds+1)+': with '+players()+(players()===1?' player':' players')+' the dealer reshuffles after '+sdr().min+'–'+sdr().max+' hands, depending on how many cards come out.':'';
+        html='<div class="ch">True count '+sign(tc)+' → bet '+rb+(rb===1?' chip':' chips')+'</div><p>'+betReason(tc)+ctx+'</p>'+details(false);
+      } else if(g.phase==='ins'){
+        var tc2=tcNow(), take=tc2>=R.ins;
+        html='<div class="ch">'+(take?'Take insurance':'Don’t take insurance')+'</div><p>Insurance costs half your bet and pays 2 to 1 if the hole card is a 10 or face card. It only pays off at true count +'+R.ins+' or more'+(R.decks===1?' in single deck':' in a shoe')+'. Right now it’s '+sign(tc2)+'.</p>'+details(false);
+      } else if(g.phase==='play'){
+        var h=cur(), rec=recFor(h), tt=total(h.c);
+        var note=(!R.dblAny&&h.c.length===2&&!canDouble(h)&&strategy(h.c,upVal(),tcNow(),true,false).a==='D'&&rec.a!=='P')?' Doubling would be best here, but this table only allows doubling on 9, 10 or 11'+(h.split?' and not after splitting':'')+'.':'';
+        var pre=g.hands.length>1?'Hand '+(g.cur+1)+' of '+g.hands.length+': ':'';
+        html='<div class="ch">'+NAMES[rec.a]+'</div><p>'+pre+'You have '+(tt.soft?'soft '+tt.t:tt.t)+' against a '+upName()+'. True count '+sign(tcNow())+'. '+esc(playReason(rec,h,upVal()))+note+'</p>';
+      } else if(g.phase==='done'){
+        html='<div class="ch">True count now: '+sign(tcNow())+'</div><p>With the cards that just came out, this is the number for your next bet.'+(R.decks===1&&needShuffle()?' Enough cards have come out: the dealer will reshuffle.':'')+'</p>';
+      } else if(g.phase==='shuffle'){
+        html='<div class="ch">The count goes back to 0</div><p>New deck: start counting from zero with the first card dealt.</p>';
+      }
+    }
+    c.innerHTML=(html?'<div class="coachbox"><h4>Coach</h4>'+html+'</div>':'')+fb;
+    c.style.display=(fb||html)?'':'none';
+  }
+  function barHint(){
+    var T=S.teach||g.hint;
+    if(!T){
+      if(g.phase==='play'){ var hb=document.createElement('button'); hb.className='barhint'; hb.innerHTML='<span class="bh">Unsure about this hand?</span><span>Show hint</span>'; hb.addEventListener('click',function(){ g.hint=true; refresh(); }); return hb; }
+      return null;
+    }
+    var tx=null;
+    if(g.phase==='bet'){ var tc=tcNow(); tx='True count '+sign(tc)+' → bet <b>'+recBet(tc)+'</b>'; }
+    else if(g.phase==='ins'){ tx=(tcNow()>=R.ins?'<b>Take insurance</b>':'<b>No insurance</b>')+' · true count '+sign(tcNow()); }
+    else if(g.phase==='play'){ var rec=recFor(cur()); tx='<b>'+NAMES[rec.a]+'</b>'+(rec.dev?' · count deviation':'')+' · true count '+sign(tcNow()); }
+    if(!tx) return null;
+    var d=document.createElement('button'); d.className='barhint'; d.innerHTML='<span class="bh">'+tx+'</span><span>Why? ↓</span>';
+    d.addEventListener('click',function(){ $('g-coach').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'center'}); });
+    return d;
+  }
+  function renderBar(){
+    var b=$('g-bar'), T=S.teach||g.hint; b.innerHTML='';
+    var hb=barHint(); if(hb) b.appendChild(hb);
+    if(g.phase==='ask'){
+      var box=document.createElement('div'); box.className='askrow';
+      var num=document.createElement('div'); num.className='asknum'; num.textContent=sign(g.guess); num.setAttribute('aria-live','polite');
+      box.appendChild(mk('−','step',function(){ g.guess--; num.textContent=sign(g.guess); }));
+      box.appendChild(num);
+      box.appendChild(mk('+','step',function(){ g.guess++; num.textContent=sign(g.guess); }));
+      box.appendChild(mk('Confirm','primary',confirmCount,false,'Enter'));
+      b.appendChild(box);
+    } else if(g.phase==='bet'){
+      var chips=document.createElement('div'); chips.className='chips3';
+      [1,2,5].forEach(function(u){
+        var c=document.createElement('button'); c.className='gchip c'+u; c.textContent=u; c.setAttribute('aria-label','Add '+u+(u===1?' chip':' chips'));
+        c.disabled=g.pending+u>g.bank; c.addEventListener('click',function(){ addChip(u); }); chips.appendChild(c);
+      });
+      b.appendChild(chips);
+      var row=document.createElement('div'); row.className='row';
+      row.appendChild(mk('Clear','',clearBet,!g.pending));
+      if(S.teach){ var rb=Math.min(recBet(tcNow()),Math.floor(g.bank)); row.appendChild(mk('Suggested ('+rb+')','',function(){ g.pending=rb; refresh(); },rb<1)); }
+      else if(g.lastBet&&g.lastBet<=g.bank) row.appendChild(mk('Repeat ('+g.lastBet+')','',function(){ g.pending=g.lastBet; refresh(); }));
+      row.appendChild(mk('Deal','primary',deal,!g.pending,'Enter'));
+      b.appendChild(row);
+    } else if(g.phase==='ins'){
+      var take=tcNow()>=R.ins, r2=document.createElement('div'); r2.className='row';
+      r2.appendChild(mk('Take insurance',T&&take?'rec':'',function(){ insurance(true); },g.bank<g.hands[0].bet/2,'Y'));
+      r2.appendChild(mk('No insurance',T&&!take?'rec':'',function(){ insurance(false); },false,'N'));
+      b.appendChild(r2);
+    } else if(g.phase==='play'){
+      var h=cur(), rec=recFor(h), r3=document.createElement('div'); r3.className='row acts';
+      r3.appendChild(mk('Hit',T&&rec.a==='H'?'rec':'',function(){ act('H'); },false,'H'));
+      r3.appendChild(mk('Stand',T&&rec.a==='S'?'rec':'',function(){ act('S'); },false,'S'));
+      r3.appendChild(mk('Double',T&&rec.a==='D'?'rec':'',function(){ act('D'); },!canDouble(h),'D'));
+      if(canSplit(h)) r3.appendChild(mk('Split',T&&rec.a==='P'?'rec':'',function(){ act('P'); },false,'P'));
+      b.appendChild(r3);
+    } else if(g.phase==='done'){
+      b.appendChild(mk('Next hand','primary',next,false,'Enter'));
+    } else if(g.phase==='shuffle'){
+      b.appendChild(mk('Shuffle and continue','primary',afterShuffle,false,'Enter'));
+    } else if(g.phase==='broke'){
+      b.appendChild(mk('Start over with 200','primary',function(){ g.bank=200; newShoe(); g.phase='bet'; g.fb=[]; refresh(); }));
+    } else {
+      var w=document.createElement('div'); w.className='wait'; w.textContent='Dealing…'; b.appendChild(w);
+    }
+  }
+  function upd(){ renderTop(); renderTable(); }
+  function refresh(){ renderTop(); renderTable(); renderBar(); renderCoach(); renderBanner(); renderSheet(); save(); }
+  function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
+  function wrong(t){ g.fb.push({ok:false,t:t}); if(g.ss) g.ss.errs.push(t); }
+
+  /* --- Count question --- */
+  function toBetPhase(){
+    g.phase='bet';
+    if(S.ask&&g.seen.length&&!g.asked){ g.phase='ask'; g.guess=0; }
+  }
+  function confirmCount(){
+    if(g.phase!=='ask') return;
+    var tc=tcNow(), ex=tcExact(); g.st.cntTot++; g.ss.cntTot++; g.asked=true;
+    if(g.guess===tc){ g.st.cntOk++; g.ss.cntOk++; g.fb.push({ok:true,t:'Correct count: '+sign(tc)+'.'}); }
+    else {
+      var close=(g.guess===Math.round(ex)||g.guess===Math.ceil(ex));
+      wrong('You said '+sign(g.guess)+'; the true count was '+sign(tc)+' ('+sign(g.rc)+' ÷ '+dk(decksLeft())+' = '+ex.toFixed(2)+').'+(close?' Close: remember to round down.':' Open "Where does this number come from?" to see the cards.'));
+    }
+    g.phase='bet'; vib(8); refresh();
+  }
+
+  /* --- Hand flow --- */
+  function addChip(u){ if(g.phase!=='bet'||g.pending+u>g.bank) return; g.pending+=u; vib(8); refresh(); }
+  function clearBet(){ g.pending=0; refresh(); }
+  async function deal(){
+    if(g.phase!=='bet'||!g.pending) return;
+    var u=g.pending, tc=tcNow(), rb=recBet(tc);
+    g.result=null; g.hint=false; g.st.betTot++; g.ss.betTot++;
+    if(u===rb){ g.st.betOk++; g.ss.betOk++; g.fb.push({ok:true,t:'Correct bet: true count '+sign(tc)+' → '+rb+'.'}); }
+    else wrong('You bet '+u+'; at true count '+sign(tc)+' it should be '+rb+'.');
+    g.before=g.bank; g.lastBet=u; g.pending=0; g.bank-=u; g.rounds++; g.ins=0; g.hole=true;
+    g.hands=[{c:[],bet:u,dbl:false,split:false,aces:false,done:false}]; g.cur=0;
+    g.dealer=[]; g.others=[]; for(var i=0;i<S.others;i++) g.others.push([]);
+    g.phase='deal'; refresh();
+    for(var r=0;r<2;r++){
+      for(var k=0;k<g.others.length;k++){ if(R.decks===1){ var oc=draw(false); oc._down=true; g.others[k].push(oc); } else g.others[k].push(draw()); upd(); await sleep(D); }
+      g.hands[0].c.push(draw()); upd(); await sleep(D);
+      g.dealer.push(draw(r===0)); upd(); await sleep(D);
+    }
+    if(upVal()===11){ g.phase='ins'; refresh(); } else await peek();
+  }
+  async function insurance(take){
+    if(g.phase!=='ins') return;
+    var tc=tcNow(), right=tc>=R.ins; g.st.playTot++; g.ss.playTot++;
+    if(take===right){ g.st.playOk++; g.ss.playOk++; g.fb.push({ok:true,t:take?'Good insurance call (true count '+sign(tc)+').':'Right to skip insurance: it only pays from +'+R.ins+'.'}); }
+    else wrong(take?'Insurance only pays at true count +'+R.ins+' or more; it was '+sign(tc)+'.':'At true count '+sign(tc)+' you should have taken insurance.');
+    if(take){ var cost=Math.min(g.bank,g.hands[0].bet/2); g.bank-=cost; g.ins=cost; }
+    g.phase='deal'; refresh(); await peek();
+  }
+  async function peek(){
+    var u=upVal(), h0=g.hands[0];
+    if((u===11||u===10)&&isBJ(g.dealer)){
+      revealHole(); revealAllOthers(); upd(); await sleep(D*1.5);
+      if(g.ins) g.bank+=g.ins*3;
+      if(natural(h0)){ g.bank+=h0.bet; return end('push','You both have blackjack.'); }
+      return end('lose','The dealer has blackjack.'+(g.ins?' Insurance pays back your bet.':''));
+    }
+    if(g.ins) g.fb.push({info:true,t:'The dealer didn’t have blackjack: insurance is lost and the hand goes on.'});
+    for(var k=0;k<g.others.length;k++) await autoPlay(g.others[k]);
+    if(natural(h0)){ g.bank+=h0.bet*2.5; h0.done=true; return dealerPlay(true); }
+    g.phase='play'; refresh();
+  }
+  function revealOthers(h){ var any=false; h.forEach(function(c){ if(c._down){ c._down=false; c._flip=true; g.rc+=hilo(c.r); g.seen.push(c); any=true; } }); return any; }
+  function revealAllOthers(){ var any=false; g.others.forEach(function(h){ if(revealOthers(h)) any=true; }); return any; }
+  async function autoPlay(h){
+    var d=upVal();
+    if(isBJ(h)){ if(revealOthers(h)){ upd(); await sleep(D); } return; }
+    while(true){ var t=total(h).t; if(t>=17||(t>=12&&d<=6)) break; h.push(draw()); upd(); await sleep(D); }
+    if(total(h).t>21&&revealOthers(h)){ upd(); await sleep(D); }
+  }
+  async function act(a){
+    if(g.phase!=='play') return;
+    var h=cur(), canD=canDouble(h), canP=canSplit(h);
+    if(a==='D'&&!canD) return; if(a==='P'&&!canP) return;
+    var rec=strategy(h.c,upVal(),tcNow(),canD,canP); g.st.playTot++; g.ss.playTot++;
+    var pre=g.hands.length>1?'Hand '+(g.cur+1)+': ':'';
+    if(a===rec.a){ g.st.playOk++; g.ss.playOk++; g.fb.push({ok:true,t:pre+NAMES[a]+', well played.'+(rec.dev?' Count deviation: '+rec.why:'')}); }
+    else wrong(pre+'You chose '+NAMES[a]+'; the right play was '+NAMES[rec.a]+'. '+rec.why);
+    g.hint=false; g.phase='deal'; refresh();
+    if(a==='P'){
+      g.bank-=h.bet; var aces=h.c[0].r==='A';
+      var nh={c:[h.c.pop()],bet:h.bet,dbl:false,split:true,aces:aces,done:false};
+      h.split=true; h.aces=aces; g.hands.splice(g.cur+1,0,nh);
+      upd(); await sleep(D);
+      h.c.push(draw()); upd(); await sleep(D);
+      if(aces){ nh.c.push(draw()); upd(); await sleep(D); h.done=true; nh.done=true; g.cur=g.hands.length; return dealerPlay(false); }
+      if(total(h.c).t===21) return advance();
+      g.phase='play'; refresh(); return;
+    }
+    if(a==='H'){
+      h.c.push(draw()); upd(); await sleep(D);
+      var t=total(h.c).t;
+      if(t>=21) return advance();
+      g.phase='play'; refresh(); return;
+    }
+    if(a==='D'){
+      g.bank-=h.bet; h.bet*=2; h.dbl=true; h.c.push(draw()); upd(); await sleep(D);
+      return advance();
+    }
+    return advance();
+  }
+  async function advance(){
+    cur().done=true; g.cur++;
+    while(g.cur<g.hands.length){
+      var h=cur();
+      if(h.c.length===1){ g.phase='deal'; upd(); await sleep(D/2); h.c.push(draw()); upd(); await sleep(D); }
+      if(h.done||total(h.c).t===21){ h.done=true; g.cur++; continue; }
+      g.phase='play'; refresh(); return;
+    }
+    return dealerPlay(false);
+  }
+  async function dealerPlay(paidBJ){
+    g.phase='deal'; revealHole(); upd(); await sleep(D*1.3);
+    var mine=!paidBJ&&g.hands.some(function(h){ return total(h.c).t<=21; });
+    var alive=mine||g.others.some(function(h){ return total(h).t<=21; });
+    if(alive){ while(total(g.dealer).t<17){ g.dealer.push(draw()); upd(); await sleep(D*1.3); } }
+    if(revealAllOthers()){ upd(); await sleep(D); }
+    if(paidBJ) return end('bj','Paid 3 to 2.');
+    var d=total(g.dealer).t, lines=[];
+    g.hands.forEach(function(h,i){
+      var p=total(h.c).t, tx;
+      if(p>21) tx='you busted with '+p;
+      else if(d>21){ g.bank+=h.bet*2; tx='you win, dealer busts with '+d; }
+      else if(p>d){ g.bank+=h.bet*2; tx='you win, '+p+' vs '+d; }
+      else if(p===d){ g.bank+=h.bet; tx='push at '+p; }
+      else tx='you lose, '+p+' vs '+d;
+      lines.push(g.hands.length>1?'Hand '+(i+1)+': '+tx:tx.charAt(0).toUpperCase()+tx.slice(1));
+    });
+    end('', lines.join(' · ')+'.');
+  }
+  function end(kind,text){
+    var net=g.bank-g.before; g.st.hands++; g.st.net+=net; g.ss.hands++; g.ss.net+=net;
+    g.result={kind:kind,text:text,net:net}; g.phase='done';
+    vib(net<0?30:[10,40,10]); refresh();
+  }
+  function next(){
+    g.fb=[]; g.result=null; g.hands=[]; g.cur=0; g.dealer=[]; g.others=[]; g.hole=true; g.hint=false; g.asked=false;
+    if(g.bank<1) g.phase='broke';
+    else if(needShuffle()){
+      g.phase='shuffle';
+      g.shuffleMsg=(R.decks===1? 'The dealer collects the cards after '+g.rounds+(g.rounds===1?' hand':' hands')+' with '+players()+(players()===1?' player':' players')+'.' : 'The cut card came out.')+' See the shoe summary below.';
+    } else toBetPhase();
+    refresh();
+  }
+  function afterShuffle(){ newShoe(); g.fb=[]; g.asked=false; toBetPhase(); refresh(); }
+
+  /* --- Settings --- */
+  function canConfigure(){ return g.phase==='bet'||g.phase==='ask'||g.phase==='shuffle'||g.phase==='broke'; }
+  function renderSheet(){
+    var lock=!canConfigure();
+    document.querySelectorAll('#g-modeseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.m===S.mode?'true':'false'); b.disabled=lock; });
+    document.querySelectorAll('#g-othseg button').forEach(function(b){ b.setAttribute('aria-pressed',+b.dataset.o===S.others?'true':'false'); b.disabled=lock; });
+    $('g-locknote').hidden=!lock;
+    $('g-rules').textContent=R.rules;
+    $('g-teach').checked=S.teach; $('g-show').checked=S.show; $('g-ask').checked=S.ask;
+    document.querySelectorAll('#g-speedseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.s===S.speed?'true':'false'); });
+    document.querySelectorAll('.lang button').forEach(function(b){ b.disabled=!canConfigure(); });
+  }
+  function openSheet(){ $('g-sheet').hidden=false; renderSheet(); $('g-close').focus(); }
+  function closeSheet(){ $('g-sheet').hidden=true; }
+  $('g-gear').addEventListener('click',openSheet);
+  $('g-modepill').addEventListener('click',openSheet);
+  $('g-close').addEventListener('click',closeSheet);
+  $('g-sheet').addEventListener('click',function(e){ if(e.target===this) closeSheet(); });
+  document.querySelectorAll('#g-modeseg button').forEach(function(b){ b.addEventListener('click',function(){
+    if(!canConfigure()||S.mode===b.dataset.m) return;
+    S.mode=b.dataset.m; R=MODES[S.mode]; newShoe(); g.pending=0; g.fb=[]; g.result=null; g.asked=false;
+    if(g.bank<1) g.phase='broke'; else toBetPhase(); refresh();
+  }); });
+  document.querySelectorAll('#g-othseg button').forEach(function(b){ b.addEventListener('click',function(){
+    if(!canConfigure()) return; S.others=+b.dataset.o; if(R.decks===1) pickTarget(); refresh();
+  }); });
+  document.querySelectorAll('#g-speedseg button').forEach(function(b){ b.addEventListener('click',function(){ S.speed=b.dataset.s; D=SPEEDS[S.speed]; refresh(); }); });
+  $('g-teach').addEventListener('change',function(){ S.teach=this.checked; refresh(); });
+  $('g-show').addEventListener('change',function(){ S.show=this.checked; refresh(); });
+  $('g-ask').addEventListener('change',function(){ S.ask=this.checked; if(g.phase==='ask'&&!S.ask) g.phase='bet'; else if(g.phase==='bet'&&S.ask&&!g.pending) toBetPhase(); refresh(); });
+  $('g-reset').addEventListener('click',function(){
+    if(!canConfigure()&&g.phase!=='done') return;
+    g.bank=200; g.st=zeroStats(); g.pending=0; g.lastBet=0; g.fb=[]; g.result=null; g.hands=[]; g.dealer=[]; g.others=[]; g.asked=false;
+    newShoe(); g.phase='bet'; refresh(); closeSheet();
+  });
+
+  /* --- Keyboard (desktop) --- */
+  document.addEventListener('keydown',function(e){
+    if(!$('p-play').classList.contains('on')||e.metaKey||e.ctrlKey||e.altKey) return;
+    if(!$('g-sheet').hidden){ if(e.key==='Escape') closeSheet(); return; }
+    var tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='SELECT') return;
+    var k=e.key.toLowerCase();
+    if(g.phase==='play'){ if(k==='h') act('H'); else if(k==='s') act('S'); else if(k==='d') act('D'); else if(k==='p') act('P'); }
+    else if(g.phase==='ins'){ if(k==='y') insurance(true); else if(k==='n') insurance(false); }
+    else if(g.phase==='ask'){
+      if(k==='arrowup'||k==='+'||k==='='){ e.preventDefault(); g.guess++; refresh(); }
+      else if(k==='arrowdown'||k==='-'){ e.preventDefault(); g.guess--; refresh(); }
+      else if(k==='enter'){ e.preventDefault(); confirmCount(); }
+    }
+    else if(g.phase==='bet'){
+      if(k==='1'||k==='2'||k==='5') addChip(+k);
+      else if(k==='backspace') clearBet();
+      else if(k==='enter'&&g.pending){ e.preventDefault(); deal(); }
+    }
+    else if(k==='enter'){
+      e.preventDefault();
+      if(g.phase==='done') next();
+      else if(g.phase==='shuffle') afterShuffle();
+    }
+  });
+
+  /* Compact table view: hide the title */
+  function syncPlaying(){ document.body.classList.toggle('playing',$('p-play').classList.contains('on')); }
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.addEventListener('click',syncPlaying); });
+
+
+  /* Language switch */
+  (function(){
+    var ok=typeof window.__hiloSetLang==='function';
+    document.querySelectorAll('.lang').forEach(function(el){ if(!ok) el.style.display='none'; });
+    document.querySelectorAll('.lang button').forEach(function(b){ b.addEventListener('click',function(){ if(b.getAttribute('aria-pressed')!=='true'&&ok) window.__hiloSetLang(b.dataset.l); }); });
+  })();
+  newShoe(); toBetPhase(); refresh(); syncPlaying();
+})();
+</script>
+</body>
+</html>

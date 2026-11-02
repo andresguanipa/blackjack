@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Andres Guanipa">
+<meta name="copyright" content="© 2026 Andres Guanipa">
+<title>Entrenador Hi-Lo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Mesa de casino: paño verde profundo, cartas marfil, acento latón. Tema único por diseño. */
+  --felt:#0f3d2e;
+  --felt-deep:#0a2c21;
+  --ivory:#f6f1e4;
+  --brass:#d6a84a;
+  --ink:#e9efe9;
+  --muted:#9fb8ab;
+  --red:#c2373a;
+  --good:#5fd08a;
+  --bad:#ff7b6e;
+  --line:rgba(233,239,233,.14);
+  --display:"Playfair Display", Georgia, serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(ellipse at 50% 0%, #165440 0%, var(--felt) 45%, var(--felt-deep) 100%) fixed;
+  background-color:var(--felt);
+  color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  min-height:100%;
+}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--display);font-weight:800;font-size:30px;margin:0;letter-spacing:.2px;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(0,0,0,.22);padding:5px;border-radius:12px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(6px)}
+.tabs button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px var(--body);padding:10px 4px;border-radius:8px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--brass);color:#1d1606}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+section.panel{display:none;flex-direction:column;gap:16px}
+section.panel.on{display:flex}
+h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0;color:var(--brass);font-weight:600;letter-spacing:.3px}
+p{margin:0}
+.box{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.val{border-radius:10px;padding:10px 8px;text-align:center;border:1px solid var(--line)}
+.val b{display:block;font-family:var(--mono);font-size:24px}
+.val span{font-size:13px;color:var(--muted)}
+.val.p b{color:var(--good)} .val.z b{color:var(--ink)} .val.m b{color:var(--bad)}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:500}
+.note{font-size:13px;color:var(--muted)}
+
+/* Cartas */
+.table-area{min-height:190px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.card{width:104px;height:148px;border-radius:10px;background:var(--ivory);color:#1a1a1a;position:relative;box-shadow:0 6px 18px rgba(0,0,0,.35);font-family:var(--display);font-weight:800}
+.card.red{color:var(--red)}
+.card .c{position:absolute;font-size:20px;line-height:1;text-align:center}
+.card .tl{top:8px;left:8px}.card .br{bottom:8px;right:8px;transform:rotate(180deg)}
+.card .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:52px}
+.card.back{background:repeating-linear-gradient(45deg,#7a1f24 0 8px,#8f2a2f 8px 16px);border:5px solid var(--ivory)}
+.card.pop{animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateY(-14px) scale(.96);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.card.pop{animation:none}}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font:600 16px var(--body);padding:14px 16px;border-radius:12px;cursor:pointer;flex:1;min-width:0}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--brass);color:#1d1606;border-color:transparent}
+.btn.big{font-family:var(--mono);font-size:24px;padding:16px 8px}
+.btn.p{color:var(--good)} .btn.m{color:var(--bad)}
+.btn:disabled{opacity:.4;cursor:default}
+.stats{display:flex;gap:8px}
+.stat{flex:1;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.stat b{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.feedback{min-height:24px;text-align:center;font-weight:600}
+.feedback.ok{color:var(--good)} .feedback.no{color:var(--bad)}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+select{background:var(--felt-deep);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:500 15px var(--body)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .num{font-family:var(--mono);font-size:34px;min-width:90px;text-align:center;font-variant-numeric:tabular-nums}
+.stepper .btn{flex:0 0 60px;font-size:24px}
+.progress{height:6px;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--brass);transition:width .15s}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:13px;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.25);border:1px solid var(--line)}
+.chip.p{color:var(--good)} .chip.m{color:var(--bad)}
+.tray{display:flex;gap:16px;align-items:flex-end;justify-content:center}
+.stack{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.deckpile{width:70px;border-radius:6px;background:repeating-linear-gradient(0deg,var(--ivory) 0 2px,#cfc7b3 2px 3px);box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.rc{font-family:var(--mono);font-size:30px;color:var(--brass)}
+.grid-tc{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.grid-tc .btn{padding:12px 4px;font-family:var(--mono);font-size:18px}
+
+/* Jugar */
+.tabs{grid-template-columns:repeat(5,1fr)}
+#p-play{gap:12px}
+.gtop{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:stretch}
+.gstat{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.gstat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.gstat b{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.gstat.tc{border-color:rgba(214,168,74,.6)}
+.gstat.tc b{color:var(--brass)}
+.gleft{display:flex;gap:8px}
+.gleft .gstat{flex:1}
+.pill{appearance:none;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);border-radius:12px;padding:6px 12px;font:600 13px var(--body);cursor:pointer;white-space:nowrap}
+.gear{appearance:none;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);border-radius:12px;width:48px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gear svg{width:22px;height:22px}
+.gmeter{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.meter{position:relative;height:6px;background:rgba(0,0,0,.3);border-radius:4px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--brass);border-radius:4px;transition:width .3s}
+.meter em{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--red);border-radius:2px}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:6px;border-radius:4px;background:var(--brass)}
+.dots i.used{background:rgba(0,0,0,.35)}
+.dots i.maybe{background:transparent;border:1px dashed var(--brass);height:6px}
+
+.felt2{position:relative;border-radius:24px 24px 48% 48% / 24px 24px 90px 90px;background:radial-gradient(ellipse at 50% 30%,#1b6a50 0%,#11463a 60%,#0c3428 100%);border:2px solid rgba(214,168,74,.4);box-shadow:inset 0 0 40px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);padding:14px 10px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:340px;overflow:hidden}
+.zone{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.zlabel{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;letter-spacing:.4px;text-transform:uppercase}
+.zone.you .zlabel{color:var(--brass)}
+.tot{font-family:var(--mono);font-size:13px;color:var(--ink);background:rgba(0,0,0,.5);border-radius:999px;padding:2px 9px;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+.tot.bust{background:var(--red);color:#fff}
+.tot.bj{background:var(--brass);color:#1d1606}
+.gcards{display:flex;justify-content:center;min-height:94px;padding-left:30px}
+.gcards .gcard{margin-left:-30px}
+.card.gcard{width:66px;height:94px;border-radius:8px;box-shadow:-2px 3px 8px rgba(0,0,0,.4)}
+.card.gcard .c{font-size:15px}.card.gcard .tl{top:5px;left:6px}.card.gcard .br{bottom:5px;right:6px}
+.card.gcard .mid{font-size:30px}
+.card.gcard.back{border-width:4px}
+.print{font-family:var(--display);font-weight:600;color:rgba(214,168,74,.55);text-align:center;font-size:13px;letter-spacing:2px;line-height:1.4;pointer-events:none}
+.print small{font-family:var(--body);font-weight:500;letter-spacing:1px;font-size:10px;text-transform:uppercase}
+.ozone{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;width:100%}
+.ohand{display:flex;flex-direction:column;align-items:center;gap:4px}
+.oname{font-size:11px;color:var(--muted)}
+.ocards{display:flex;min-height:60px;padding-left:22px}
+.ocards .gcard{margin-left:-22px}
+.ocards .card.gcard{width:42px;height:60px;border-radius:6px}
+.ocards .card.gcard .c{font-size:10px}.ocards .card.gcard .tl{top:3px;left:4px}.ocards .card.gcard .br{bottom:3px;right:4px}
+.ocards .card.gcard .mid{font-size:18px}
+.ocards .card.gcard.back{border-width:3px}
+.tot.sm{font-size:11px;padding:1px 7px}
+.yourow{display:flex;align-items:center;gap:12px}
+.spot{width:60px;height:60px;border-radius:50%;border:2px dashed rgba(214,168,74,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;margin-top:2px}
+.spot b{font-family:var(--mono);font-size:15px;position:relative;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.spot b.empty{font:500 11px var(--body);color:var(--muted)}
+.cstack{position:absolute;left:50%;top:50%;width:40px;height:40px;transform:translate(-50%,-50%)}
+.disc{position:absolute;left:0;width:40px;height:40px;border-radius:50%;border:4px dashed rgba(255,255,255,.55);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.disc.c1{background:#e9e4d6;border-color:rgba(30,30,30,.35)}
+.disc.c2{background:#1f4e8f}
+.disc.c5{background:#a8282e}
+.card.deal{animation:deal .32s cubic-bezier(.2,.8,.3,1)}
+@keyframes deal{from{transform:translate(40px,-160px) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+.card.flip{animation:flip .3s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:none}}
+.banner{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);background:rgba(8,34,26,.94);border:1px solid var(--brass);border-radius:16px;padding:14px 20px;text-align:center;min-width:220px;max-width:88%;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:bannerIn .25s ease-out;z-index:3}
+.banner h3{font-family:var(--display);font-size:26px;margin:0;color:var(--ink);letter-spacing:0}
+.banner.win h3,.banner.bj h3{color:var(--good)}
+.banner.lose h3{color:var(--bad)}
+.banner p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+@keyframes bannerIn{from{opacity:0;transform:translate(-50%,-40%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%)}}
+@media (prefers-reduced-motion:reduce){.card.deal,.card.flip,.banner{animation:none}}
+
+.gcoach{display:flex;flex-direction:column;gap:8px}
+.fb{font-size:14px;border-radius:10px;padding:8px 12px;background:rgba(0,0,0,.25);border-left:3px solid var(--muted)}
+.fb.ok{border-left-color:var(--good)}
+.fb.no{border-left-color:var(--bad)}
+.coachbox{background:rgba(214,168,74,.1);border:1px solid rgba(214,168,74,.45);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.coachbox h4{margin:0;font:600 11px var(--body);color:var(--brass);letter-spacing:.6px;text-transform:uppercase}
+.coachbox .ch{font-weight:600;font-size:17px}
+.coachbox details{margin-top:2px}
+.coachbox summary{cursor:pointer;color:var(--brass);font-size:13px;font-weight:600}
+.coachbox details[open] summary{margin-bottom:8px}
+.coachbox .math{font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;line-height:1.6;margin-top:6px}
+.coachbox .chips .chip{font-size:11px;padding:2px 5px}
+.statline{text-align:center}
+
+.gbar{position:sticky;bottom:0;z-index:4;margin:0 -16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--felt-deep) 70%,rgba(10,44,33,0));display:flex;flex-direction:column;gap:10px}
+.gbar .row{flex-wrap:nowrap}
+.gbar .btn{padding:14px 8px}
+.btn kbd{display:none;font:500 11px var(--mono);opacity:.6;margin-left:6px;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+@media (hover:hover) and (pointer:fine){.btn kbd{display:inline}}
+.btn.rec{box-shadow:0 0 0 2px var(--brass);border-color:var(--brass)}
+.btn.ghost{background:transparent;flex:0 0 auto;font-size:14px;color:var(--brass);border-color:rgba(214,168,74,.4)}
+.chips3{display:flex;justify-content:center;gap:14px}
+.gchip{appearance:none;width:58px;height:58px;border-radius:50%;border:5px dashed rgba(255,255,255,.6);font:600 18px var(--mono);color:#fff;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.4)}
+.gchip.c1{background:#e9e4d6;color:#1a1a1a;border-color:rgba(30,30,30,.35)}
+.gchip.c2{background:#1f4e8f}
+.gchip.c5{background:#a8282e}
+.gchip:active{transform:translateY(2px)}
+.gchip:disabled{opacity:.3;cursor:default}
+.barhint{appearance:none;border:1px solid rgba(214,168,74,.45);background:rgba(214,168,74,.12);color:var(--ink);border-radius:10px;padding:8px 12px;font:500 14px var(--body);text-align:left;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.barhint b{color:var(--brass)}
+.barhint span{font-size:12px;color:var(--muted);white-space:nowrap}
+.barhint span.bh{font-size:14px;color:var(--ink);white-space:normal}
+.wait{text-align:center;color:var(--muted);padding:14px;font-size:14px}
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheetbox{background:var(--felt-deep);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:640px;padding:18px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:90%;overflow:auto}
+.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheethead .btn{flex:0 0 auto;padding:10px 16px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:rgba(0,0,0,.3);border-radius:12px;padding:4px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:10px 6px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brass);color:#1d1606}
+.seg button:disabled{opacity:.45;cursor:default}
+.seg.sm{min-width:150px}
+.seg.sm button{padding:8px 8px;font-size:13px}
+ul.errs{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;color:var(--ink);flex-direction:row;cursor:pointer}
+.switch small{display:block;color:var(--muted);font-size:12px}
+.switch input{width:22px;height:22px;accent-color:var(--brass);flex:0 0 auto}
+
+/* Mesa compacta y manos divididas */
+body.playing header{display:none}
+body.playing .wrap{padding-top:10px;gap:10px}
+.gstat{padding:4px 10px}
+.gstat b{font-size:18px}
+.felt2{padding:10px 8px 14px;gap:8px;min-height:0}
+.print{font-size:11px;letter-spacing:1.5px}
+.print small{font-size:9px}
+@media (max-height:760px){.print small{display:none}}
+.gcards{min-height:82px;padding-left:26px}
+.gcards .gcard{margin-left:-26px}
+.card.gcard{width:58px;height:82px}
+.card.gcard .c{font-size:14px}
+.card.gcard .mid{font-size:26px}
+.ocards{min-height:54px;padding-left:20px}
+.ocards .gcard{margin-left:-20px}
+.ocards .card.gcard{width:38px;height:54px}
+.spot{width:48px;height:48px}
+.cstack{width:34px;height:34px}
+.disc{width:34px;height:34px;border-width:3px}
+.spot b{font-size:13px}
+.spot b.empty{font-size:9px}
+.hands{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;width:100%}
+.phand{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 4px 6px;border-radius:12px;border:2px solid transparent}
+.phand.active{border-color:var(--brass);background:rgba(214,168,74,.08)}
+.phand.done{opacity:.8}
+.hbet{font-size:11px;color:var(--muted)}
+.hands.many .card.gcard{width:44px;height:62px}
+.hands.many .card.gcard .c{font-size:11px}
+.hands.many .card.gcard .mid{font-size:20px}
+.hands.many .gcards{min-height:62px;padding-left:22px}
+.hands.many .gcards .gcard{margin-left:-22px}
+.gbar{padding:8px 16px calc(10px + env(safe-area-inset-bottom));gap:8px}
+.gbar .btn{padding:12px 6px;font-size:15px}
+.barhint{padding:6px 10px}
+.row.acts .btn{min-width:0}
+@media (max-width:480px){.row.acts:has(.btn:nth-child(4)) kbd{display:none}}
+.askrow{display:grid;grid-template-columns:56px 1fr 56px 1.4fr;gap:8px;align-items:center}
+.askrow .btn.step{font:600 24px var(--mono);padding:8px 0}
+.asknum{font:600 30px var(--mono);text-align:center;color:var(--brass);font-variant-numeric:tabular-nums}
+.chips3 .gchip{width:52px;height:52px}
+.credit{text-align:center;font-size:12px;color:var(--muted);padding:8px 0 4px;letter-spacing:.3px}
+.credit b{color:var(--brass);font-weight:600}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.seg.lang{min-width:0;flex:0 0 auto}
+.seg.lang button{padding:6px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="hrow"><h1>Entrenador Hi-Lo</h1><div class="seg sm lang" role="group" aria-label="Idioma"><button data-l="en" aria-pressed="false">EN</button><button data-l="es" aria-pressed="true">ES</button></div></div>
+    <p>Aprende a contar cartas en blackjack, paso a paso: shoe y single deck.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="t-learn" aria-selected="true" data-p="learn">Aprende</button>
+    <button role="tab" id="t-vals" aria-selected="false" data-p="vals">Valores</button>
+    <button role="tab" id="t-run" aria-selected="false" data-p="run">Conteo</button>
+    <button role="tab" id="t-true" aria-selected="false" data-p="true">Real</button>
+    <button role="tab" id="t-play" aria-selected="false" data-p="play">Jugar</button>
+  </nav>
+
+  <!-- APRENDE -->
+  <section class="panel on" id="p-learn">
+    <div class="box">
+      <h3>1 · El valor de cada carta</h3>
+      <div class="vals">
+        <div class="val p"><b>+1</b><span>2 3 4 5 6</span></div>
+        <div class="val z"><b>0</b><span>7 8 9</span></div>
+        <div class="val m"><b>−1</b><span>10 J Q K A</span></div>
+      </div>
+      <p class="note">Las cartas bajas ayudan al crupier; las altas te ayudan a ti. Cuando salen muchas bajas, el shoe queda cargado de altas y el conteo sube.</p>
+    </div>
+
+    <div class="box">
+      <h3>2 · Conteo continuo</h3>
+      <p>Empiezas en 0 cuando barajan. Sumas el valor de cada carta que veas, las tuyas, las de otros jugadores y las del crupier. Ejemplo: 5, K, 3, 8, A → +1 −1 +1 0 −1 = <b>0</b>.</p>
+      <p class="note">Truco: las cartas que se cancelan en pares (una alta y una baja) no necesitas sumarlas.</p>
+    </div>
+
+    <div class="box">
+      <h3>3 · Conteo real</h3>
+      <p>Un +6 vale mucho más si queda 1 mazo que si quedan 6. Por eso divides:</p>
+      <p style="font-family:var(--mono);font-size:17px;text-align:center;color:var(--brass)">conteo real = conteo continuo ÷ mazos restantes</p>
+      <p class="note">Calcula los mazos restantes mirando la bandeja de descarte: si en un shoe de 6 mazos ya hay 2 descartados, quedan unos 4. Redondea el resultado hacia abajo.</p>
+    </div>
+
+    <div class="box">
+      <h3>4 · Cuánto apostar</h3>
+      <table>
+        <thead><tr><th>Conteo real</th><th>Apuesta</th></tr></thead>
+        <tbody>
+          <tr><td>+1 o menos</td><td>Mínima (1 unidad)</td></tr>
+          <tr><td>+2</td><td>2 unidades</td></tr>
+          <tr><td>+3</td><td>4 unidades</td></tr>
+          <tr><td>+4 o más</td><td>6–8 unidades</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Esta es una rampa de ejemplo. Una unidad debe ser una parte pequeña de tu dinero total, porque la varianza es enorme.</p>
+    </div>
+
+    <div class="box">
+      <h3>5 · Jugar según el conteo</h3>
+      <p>Casi siempre juegas estrategia básica. Con ciertos conteos reales conviene cambiar la jugada:</p>
+      <table>
+        <thead><tr><th>Tu mano vs crupier</th><th>Cambia si el conteo real es…</th></tr></thead>
+        <tbody>
+          <tr><td>Seguro (crupier muestra A)</td><td>+3 o más: tómalo (single deck: +2)</td></tr>
+          <tr><td>16 vs 10</td><td>0 o más: plántate</td></tr>
+          <tr><td>15 vs 10</td><td>+4 o más: plántate</td></tr>
+          <tr><td>12 vs 3 / 12 vs 2</td><td>+2 / +3 o más: plántate</td></tr>
+          <tr><td>12 vs 4</td><td>negativo: pide</td></tr>
+          <tr><td>11 vs A</td><td>+1 o más: dobla (single deck: siempre)</td></tr>
+          <tr><td>10 vs 10 / 10 vs A</td><td>+4 o más: dobla</td></tr>
+          <tr><td>9 vs 2 / 9 vs 7</td><td>+1 / +3 o más: dobla (single deck: 9 vs 2 siempre)</td></tr>
+        </tbody>
+      </table>
+      <p class="note">La pestaña Jugar te corrige cada apuesta y cada jugada usando estas reglas.</p>
+    </div>
+
+    <div class="box">
+      <h3>Orden recomendado</h3>
+      <ol>
+        <li>Domina la estrategia básica sin errores.</li>
+        <li>Practica los valores hasta que salgan sin pensar.</li>
+        <li>Cuenta un mazo completo: al final debe dar 0. Meta: menos de 25 segundos.</li>
+        <li>Practica el conteo real y la apuesta.</li>
+      </ol>
+    </div>
+    <p class="note" style="text-align:center">Contar cartas es legal, pero el casino puede pedirte que dejes de jugar. Aun bien hecho, la ventaja es pequeña y puedes perder durante mucho tiempo.</p>
+  </section>
+
+  <!-- VALORES -->
+  <section class="panel" id="p-vals">
+    <h2>¿Cuánto vale esta carta?</h2>
+    <div class="stats">
+      <div class="stat"><span>Aciertos</span><b id="v-ok">0/0</b></div>
+      <div class="stat"><span>Racha</span><b id="v-streak">0</b></div>
+      <div class="stat"><span>Mejor racha</span><b id="v-best">0</b></div>
+    </div>
+    <div class="table-area" id="v-card"></div>
+    <div class="feedback" id="v-fb" aria-live="polite"></div>
+    <div class="row">
+      <button class="btn big p" data-v="1" id="v-plus">+1</button>
+      <button class="btn big" data-v="0" id="v-zero">0</button>
+      <button class="btn big m" data-v="-1" id="v-minus">−1</button>
+    </div>
+  </section>
+
+  <!-- CONTEO CONTINUO -->
+  <section class="panel" id="p-run">
+    <h2>Conteo continuo</h2>
+    <div class="seg" id="r-modeseg"><button data-m="auto" aria-pressed="true">Automático</button><button data-m="clock" aria-pressed="false">Contra reloj</button></div>
+    <p class="note" id="r-modenote">Las cartas salen solas a la velocidad que elijas.</p>
+    <div class="row">
+      <label for="r-n">Cartas
+        <select id="r-n">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+          <option value="52">Mazo completo (52)</option>
+        </select>
+      </label>
+      <label for="r-speed" id="r-speed-l">Velocidad
+        <select id="r-speed">
+          <option value="1400">Lenta</option>
+          <option value="900" selected>Media</option>
+          <option value="550">Rápida</option>
+          <option value="350">Casino</option>
+        </select>
+      </label>
+      <label for="r-group">De a
+        <select id="r-group">
+          <option value="1" selected>1 carta</option>
+          <option value="2">2 cartas</option>
+        </select>
+      </label>
+    </div>
+    <div class="stats" id="r-clockstats" style="display:none">
+      <div class="stat"><span>Tiempo</span><b id="r-time">0,0 s</b></div>
+      <div class="stat"><span>Récord · <span id="r-bestn">20</span></span><b id="r-best">–</b></div>
+      <div class="stat"><span>Meta</span><b id="r-goal">–</b></div>
+    </div>
+    <div class="progress"><i id="r-prog"></i></div>
+    <div class="table-area" id="r-card"><div class="card back"></div></div>
+    <div class="feedback" id="r-fb" aria-live="polite">Pulsa Repartir y lleva la cuenta en tu cabeza.</div>
+    <button class="btn primary big" id="r-nextc" style="display:none">Siguiente carta</button>
+    <div id="r-answer" style="display:none;flex-direction:column;gap:12px;align-items:center">
+      <p>¿Cuál es el conteo final?</p>
+      <div class="stepper">
+        <button class="btn" id="r-dec" aria-label="Restar uno">−</button>
+        <div class="num" id="r-val">0</div>
+        <button class="btn" id="r-inc" aria-label="Sumar uno">+</button>
+      </div>
+      <button class="btn primary" id="r-check" style="width:100%">Comprobar</button>
+    </div>
+    <div id="r-detail" class="chips"></div>
+    <button class="btn primary" id="r-start">Repartir</button>
+  </section>
+
+  <!-- CONTEO REAL -->
+  <section class="panel" id="p-true">
+    <h2>Conteo real y apuesta</h2>
+    <div class="seg" id="t-modeseg"><button data-m="shoe" aria-pressed="true">Shoe · 6 mazos</button><button data-m="single" aria-pressed="false">Single deck</button></div>
+    <p class="note" id="t-note">Mira el conteo continuo y cuántos mazos quedan, y elige el conteo real (redondeado hacia abajo).</p>
+    <div class="stats">
+      <div class="stat"><span>Aciertos</span><b id="t-ok">0/0</b></div>
+      <div class="stat"><span>Racha</span><b id="t-streak">0</b></div>
+    </div>
+    <div class="box" style="align-items:center">
+      <span class="note">Conteo continuo</span>
+      <div class="rc" id="t-rc">+0</div>
+      <div class="tray">
+        <div class="stack"><div class="deckpile" id="t-left"></div><span id="t-left-l">Quedan</span></div>
+        <div class="stack"><div class="deckpile" id="t-used" style="opacity:.55"></div><span id="t-used-l">Descarte</span></div>
+      </div>
+    </div>
+    <div class="grid-tc" id="t-opts"></div>
+    <div class="feedback" id="t-fb" aria-live="polite"></div>
+    <button class="btn primary" id="t-next" style="display:none">Siguiente</button>
+  </section>
+
+  <!-- JUGAR -->
+  <section class="panel" id="p-play">
+    <div class="gtop">
+      <div class="gleft">
+        <div class="gstat"><span>Fichas</span><b id="g-bank">200</b></div>
+        <div class="gstat tc" id="g-tc"><span>Conteo real</span><b id="g-tcv">0</b></div>
+      </div>
+      <button class="pill" id="g-modepill" aria-label="Cambiar tipo de mesa">Shoe</button>
+      <button class="gear" id="g-gear" aria-label="Ajustes de la mesa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.5" fill="currentColor"/><circle cx="15" cy="17" r="2.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="gmeter" id="g-meter"></div>
+
+    <div class="felt2">
+      <div class="zone dealer">
+        <div class="zlabel">Crupier <span class="tot" id="g-dtot"></span></div>
+        <div class="gcards" id="g-dz"></div>
+      </div>
+      <div class="print">BLACKJACK PAGA 3 A 2<br><small>El crupier se planta en todos los 17</small></div>
+      <div class="ozone" id="g-oz"></div>
+      <div class="zone you">
+        <div class="hands" id="g-pz"></div>
+        <div class="yourow"><div class="spot" id="g-spot" aria-label="Tu apuesta"></div><div class="zlabel">Tú <span class="tot" id="g-ptot"></span></div></div>
+      </div>
+      <div class="banner" id="g-banner" hidden></div>
+    </div>
+
+    <div class="gcoach" id="g-coach" aria-live="polite"></div>
+    <p class="note statline" id="g-statline"></p>
+    <div class="gbar" id="g-bar"></div>
+  </section>
+
+  <div class="sheet" id="g-sheet" hidden>
+    <div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="g-sheet-h">
+      <div class="sheethead"><h2 id="g-sheet-h">Ajustes de la mesa</h2><button class="btn primary" id="g-close">Listo</button></div>
+      <div class="seg" id="g-modeseg"><button data-m="shoe">Shoe · 6 mazos</button><button data-m="single">Single deck</button></div>
+      <p class="note" id="g-rules"></p>
+      <div class="setrow"><span>Otros jugadores</span><div class="seg sm" id="g-othseg"><button data-o="0">0</button><button data-o="1">1</button><button data-o="2">2</button><button data-o="3">3</button></div></div>
+      <div class="setrow"><span>Velocidad</span><div class="seg sm" id="g-speedseg"><button data-s="normal">Normal</button><button data-s="rapida">Rápida</button><button data-s="casino">Casino</button></div></div>
+      <p class="note" id="g-locknote" hidden>El tipo de mesa, los jugadores y el idioma se cambian entre manos.</p>
+      <label class="switch" for="g-teach"><span>Modo enseñanza<small>Te dice qué apostar y qué jugar en cada momento, y por qué.</small></span><input type="checkbox" id="g-teach"></label>
+      <label class="switch" for="g-ask"><span>Pedirme el conteo antes de apostar<small>Antes de cada mano escribes tu conteo real y la app te dice si acertaste.</small></span><input type="checkbox" id="g-ask"></label>
+      <label class="switch" for="g-show"><span>Mostrar conteo real<small>Úsalo para revisarte. En el casino lo llevas en la cabeza.</small></span><input type="checkbox" id="g-show"></label>
+      <div class="setrow lang"><span>Idioma</span><div class="seg sm lang" role="group" aria-label="Idioma"><button data-l="en" aria-pressed="false">EN</button><button data-l="es" aria-pressed="true">ES</button></div></div>
+      <button class="btn" id="g-reset">Reiniciar fichas y estadísticas</button>
+      <p class="note" style="text-align:center">Entrenador Hi-Lo · © 2026 Andres Guanipa. Todos los derechos reservados.</p>
+    </div>
+  </div>
+
+  <footer class="credit">© 2026 <b>Andres Guanipa</b>. Todos los derechos reservados.</footer>
+</div>
+
+<script>
+(function(){
+  var RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  var SUITS=['♠','♥','♦','♣'];
+  function hilo(r){ if('23456'.indexOf(r)>=0 && r.length===1) return 1; if(r==='7'||r==='8'||r==='9') return 0; return -1; }
+  function rnd(n){ return Math.floor(Math.random()*n); }
+  function randomCard(){ return {r:RANKS[rnd(13)], s:SUITS[rnd(4)]}; }
+  function deck(){ var d=[]; RANKS.forEach(function(r){SUITS.forEach(function(s){d.push({r:r,s:s});});}); for(var i=d.length-1;i>0;i--){var j=rnd(i+1);var t=d[i];d[i]=d[j];d[j]=t;} return d; }
+  function cardEl(c){
+    var el=document.createElement('div');
+    el.className='card pop'+((c.s==='♥'||c.s==='♦')?' red':'');
+    el.setAttribute('role','img'); el.setAttribute('aria-label',c.r+' '+c.s);
+    el.innerHTML='<div class="c tl">'+c.r+'<br>'+c.s+'</div><div class="mid">'+c.s+'</div><div class="c br">'+c.r+'<br>'+c.s+'</div>';
+    return el;
+  }
+  function sign(n){ return (n>0?'+':n<0?'−':'')+Math.abs(n); }
+  function $(id){ return document.getElementById(id); }
+
+  /* Pestañas */
+  var timer=null;
+  var tabs=document.querySelectorAll('.tabs button');
+  tabs.forEach(function(b){ b.addEventListener('click',function(){
+    tabs.forEach(function(x){x.setAttribute('aria-selected', x===b?'true':'false');});
+    document.querySelectorAll('section.panel').forEach(function(p){p.classList.toggle('on', p.id==='p-'+b.dataset.p);});
+    if(timer){ clearTimeout(timer); timer=null; resetRun(); } else if(run.active||run.tick) resetRun();
+  });});
+
+  /* Valores */
+  var v={card:null,ok:0,tot:0,streak:0,best:0,lock:false};
+  function vNext(){ v.card=randomCard(); var a=$('v-card'); a.innerHTML=''; a.appendChild(cardEl(v.card)); v.lock=false; }
+  function vAnswer(val){
+    if(v.lock) return; v.lock=true;
+    var right=hilo(v.card.r); v.tot++;
+    var fb=$('v-fb');
+    if(val===right){ v.ok++; v.streak++; v.best=Math.max(v.best,v.streak); fb.className='feedback ok'; fb.textContent='Correcto: '+v.card.r+' = '+sign(right); }
+    else { v.streak=0; fb.className='feedback no'; fb.textContent='No: '+v.card.r+' vale '+sign(right); }
+    $('v-ok').textContent=v.ok+'/'+v.tot; $('v-streak').textContent=v.streak; $('v-best').textContent=v.best;
+    setTimeout(vNext, val===right?350:1100);
+  }
+  ['v-plus','v-zero','v-minus'].forEach(function(id){ $(id).addEventListener('click',function(){ vAnswer(parseInt(this.dataset.v,10)); }); });
+  vNext();
+
+  /* Conteo continuo */
+  var run={cards:[],i:0,count:0,guess:0,start:0,mode:'auto',active:false,elapsed:0,tick:null};
+  var GOAL={10:5,20:10,30:15,52:25};
+  function bestKey(n){ return 'hilo-best-'+n; }
+  function getBest(n){ try{ var v=parseFloat(localStorage.getItem(bestKey(n))); return isNaN(v)?null:v; }catch(e){ return null; } }
+  function setBest(n,v){ try{ localStorage.setItem(bestKey(n),String(v)); }catch(e){} }
+  function secs(v){ return v.toFixed(1).replace('.',',')+' s'; }
+  function showClockStats(){
+    var n=parseInt($('r-n').value,10), b=getBest(n);
+    $('r-bestn').textContent=n; $('r-best').textContent=b==null?'–':secs(b); $('r-goal').textContent=GOAL[n]+' s';
+  }
+  function setRunMode(m){
+    run.mode=m;
+    document.querySelectorAll('#r-modeseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.m===m?'true':'false'); });
+    $('r-speed-l').style.display=m==='auto'?'':'none';
+    $('r-clockstats').style.display=m==='clock'?'':'none';
+    $('r-modenote').textContent=m==='auto'?'Las cartas salen solas a la velocidad que elijas.':'Toca la carta (o el botón) para sacar la siguiente lo más rápido que puedas, sin perder la cuenta. Meta para un mazo completo: 25 segundos.';
+    showClockStats(); resetRun();
+  }
+  document.querySelectorAll('#r-modeseg button').forEach(function(b){ b.addEventListener('click',function(){ if(!run.active) setRunMode(b.dataset.m); }); });
+  $('r-n').addEventListener('change',showClockStats);
+  function resetRun(){
+    run.active=false; if(run.tick){ clearInterval(run.tick); run.tick=null; }
+    $('r-card').innerHTML='<div class="card back"></div>';
+    $('r-answer').style.display='none'; $('r-start').style.display=''; $('r-nextc').style.display='none';
+    $('r-prog').style.width='0'; $('r-detail').innerHTML='';
+    $('r-fb').className='feedback'; $('r-fb').textContent='Pulsa Repartir y lleva la cuenta en tu cabeza.';
+    $('r-time').textContent='0,0 s';
+  }
+  function showGroup(){
+    var group=parseInt($('r-group').value,10), area=$('r-card'); area.innerHTML='';
+    for(var k=0;k<group && run.i<run.cards.length;k++){ area.appendChild(cardEl(run.cards[run.i])); run.i++; }
+    $('r-prog').style.width=(run.i/run.cards.length*100)+'%';
+  }
+  function askAnswer(){
+    run.active=false; $('r-card').innerHTML='<div class="card back"></div>'; $('r-fb').textContent=''; $('r-nextc').style.display='none';
+    run.guess=0; $('r-val').textContent='0'; $('r-answer').style.display='flex';
+  }
+  function dealStep(){
+    var group=parseInt($('r-group').value,10), speed=parseInt($('r-speed').value,10);
+    showGroup();
+    if(run.i<run.cards.length){ timer=setTimeout(dealStep, speed*(group===2?1.4:1)); }
+    else { timer=setTimeout(function(){ timer=null; askAnswer(); }, speed); }
+  }
+  function clockNext(){
+    if(run.mode!=='clock'||!run.active) return;
+    if(run.i>=run.cards.length){
+      run.elapsed=(Date.now()-run.start)/1000; clearInterval(run.tick); run.tick=null; $('r-time').textContent=secs(run.elapsed);
+      askAnswer(); return;
+    }
+    showGroup();
+  }
+  $('r-card').addEventListener('click',clockNext);
+  $('r-nextc').addEventListener('click',clockNext);
+  $('r-start').addEventListener('click',function(){
+    var n=parseInt($('r-n').value,10);
+    var d=deck(); run.cards=d.slice(0,n); run.i=0;
+    run.count=run.cards.reduce(function(a,c){return a+hilo(c.r);},0);
+    $('r-start').style.display='none'; $('r-detail').innerHTML=''; $('r-answer').style.display='none';
+    $('r-fb').className='feedback'; run.active=true; run.start=Date.now();
+    if(run.mode==='clock'){
+      $('r-fb').textContent='Toca para la siguiente. Cuando salga la última, toca una vez más.';
+      $('r-nextc').style.display=''; showGroup();
+      run.tick=setInterval(function(){ $('r-time').textContent=secs((Date.now()-run.start)/1000); },100);
+    } else { $('r-fb').textContent='Contando…'; dealStep(); }
+  });
+  $('r-dec').addEventListener('click',function(){ run.guess--; $('r-val').textContent=sign(run.guess); });
+  $('r-inc').addEventListener('click',function(){ run.guess++; $('r-val').textContent=sign(run.guess); });
+  $('r-check').addEventListener('click',function(){
+    var fb=$('r-fb'), n=run.cards.length, ok=run.guess===run.count, extra='';
+    if(run.mode==='clock'){
+      var b=getBest(n), goal=GOAL[n];
+      extra=' Tiempo: '+secs(run.elapsed)+'.';
+      if(ok){
+        if(b==null||run.elapsed<b){ setBest(n,run.elapsed); extra+=' ¡Nuevo récord!'; }
+        extra+= run.elapsed<=goal? ' Cumpliste la meta de '+goal+' s.' : ' Meta: '+goal+' s.';
+      } else extra+=' El tiempo no cuenta como récord si el conteo está mal.';
+      showClockStats();
+    }
+    if(ok){ fb.className='feedback ok'; fb.textContent='¡Exacto! El conteo era '+sign(run.count)+(n===52?' (un mazo completo siempre da 0).':'.')+extra; }
+    else { fb.className='feedback no'; fb.textContent='Dijiste '+sign(run.guess)+'; era '+sign(run.count)+'. Revisa la secuencia abajo.'+extra; }
+    var det=$('r-detail'); det.innerHTML=''; var acc=0;
+    run.cards.forEach(function(c){ var h=hilo(c.r); acc+=h; var s=document.createElement('span'); s.className='chip'+(h>0?' p':h<0?' m':''); s.textContent=c.r+' → '+sign(acc); det.appendChild(s); });
+    $('r-answer').style.display='none'; $('r-start').style.display=''; $('r-start').textContent='Repartir otra vez';
+  });
+  showClockStats();
+
+  /* Conteo real */
+  var t={rc:0,decks:0,ok:0,tot:0,streak:0,mode:'shoe'};
+  function betFor(tc){ if(tc<=1) return '1 unidad (mínima)'; if(tc===2) return '2 unidades'; if(tc===3) return '4 unidades'; if(tc===4) return '6 unidades'; return '8 unidades'; }
+  function dstr(d){ return String(d).replace('.',','); }
+  function deckWord(d){ return dstr(d)+(d===1?' mazo':' mazos'); }
+  document.querySelectorAll('#t-modeseg button').forEach(function(b){ b.addEventListener('click',function(){
+    t.mode=b.dataset.m; document.querySelectorAll('#t-modeseg button').forEach(function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); });
+    $('t-note').textContent=t.mode==='shoe'?'Mira el conteo continuo y cuántos mazos quedan, y elige el conteo real (redondeado hacia abajo).':'Un solo mazo: calcula en cuartos. Con ¾ de mazo divides entre 0,75; con medio mazo, entre 0,5 (es lo mismo que multiplicar por 2).';
+    tNext();
+  }); });
+  function tNext(){
+    var single=t.mode==='single', options=single?[0.75,0.5]:[1,1.5,2,2.5,3,3.5,4,4.5,5], total=single?1:6, tc, tries=0;
+    do{
+      t.decks=options[rnd(options.length)];
+      var tcTarget=rnd(9)-2;
+      t.rc=Math.round(tcTarget*t.decks + (Math.random()*t.decks*0.9));
+      if(t.rc===0) t.rc=rnd(2)?1:-1;
+      tc=Math.floor(t.rc/t.decks); tries++;
+    } while((tc<-3||tc>6)&&tries<50);
+    $('t-rc').textContent=sign(t.rc);
+    var used=total-t.decks, scale=single?70:18;
+    $('t-left').style.height=Math.max(6,t.decks*scale)+'px';
+    $('t-used').style.height=Math.max(6,used*scale)+'px';
+    if(single){
+      $('t-left-l').textContent='Quedan ~'+Math.round(t.decks*52)+' cartas ('+dstr(t.decks)+')';
+      $('t-used-l').textContent='Descarte: ~'+Math.round(used*52)+' cartas';
+    } else {
+      $('t-left-l').textContent='Quedan ~'+deckWord(t.decks);
+      $('t-used-l').textContent='Descarte: '+deckWord(used);
+    }
+    var opts=$('t-opts'); opts.innerHTML='';
+    for(var k=-3;k<=6;k++){ var b=document.createElement('button'); b.className='btn'+(k>0?' p':k<0?' m':''); b.textContent=sign(k); b.dataset.v=k; b.addEventListener('click',tAnswer); opts.appendChild(b); }
+    $('t-fb').textContent=''; $('t-fb').className='feedback'; $('t-next').style.display='none';
+  }
+  function tAnswer(){
+    var tc=Math.floor(t.rc/t.decks); var gv=parseInt(this.dataset.v,10);
+    t.tot++;
+    var exact=(t.rc/t.decks).toFixed(2).replace('.',',');
+    var fb=$('t-fb');
+    if(gv===tc){ t.ok++; t.streak++; fb.className='feedback ok'; fb.textContent='Correcto: '+sign(t.rc)+' ÷ '+dstr(t.decks)+' = '+exact+' → '+sign(tc)+'. Apuesta: '+betFor(tc)+'.'; }
+    else { t.streak=0; fb.className='feedback no'; fb.textContent='Era '+sign(tc)+': '+sign(t.rc)+' ÷ '+dstr(t.decks)+' = '+exact+', hacia abajo. Apuesta: '+betFor(tc)+'.'; }
+    $('t-ok').textContent=t.ok+'/'+t.tot; $('t-streak').textContent=t.streak;
+    document.querySelectorAll('#t-opts .btn').forEach(function(b){ b.disabled=true; });
+    $('t-next').style.display='';
+  }
+  $('t-next').addEventListener('click',tNext);
+  tNext();
+
+  /* ===== Jugar ===== */
+  var MODES={
+    shoe:{name:'Shoe · 6 mazos',decks:6,pen:0.75,dblAny:true,das:true,ins:3,step:2,
+      rules:'6 mazos · paga 3 a 2 · el crupier se planta en 17 suave · doblas con cualquier par de cartas, también después de dividir · divides pares hasta 4 manos (los Ases divididos reciben una sola carta) · barajan al llegar a la carta de corte (75% del shoe) y queman la primera carta.'},
+    single:{name:'Single deck',decks:1,pen:1,dblAny:false,das:false,ins:2,step:4,
+      rules:'1 mazo · paga 3 a 2 · el crupier se planta en 17 suave · solo doblas con 9, 10 u 11 y no después de dividir · divides pares hasta 4 manos (los Ases divididos reciben una sola carta) · el crupier baraja según las cartas que van saliendo: solo tú, tras 3–5 manos; con 2 jugadores, tras 3–4; con 3 o 4, tras 2–3. Quema la primera carta. Como en el casino, las dos primeras cartas de los otros jugadores van boca abajo: solo las ves si se pasan, tienen blackjack o al final de la mano.'}
+  };
+  var store={
+    get:function(){ try{ return JSON.parse(localStorage.getItem('hilo-game')||'{}')||{}; }catch(e){ return {}; } },
+    set:function(o){ try{ localStorage.setItem('hilo-game',JSON.stringify(o)); }catch(e){} }
+  };
+  var saved=store.get();
+  function zeroStats(){ return {hands:0,net:0,betOk:0,betTot:0,playOk:0,playTot:0,cntOk:0,cntTot:0}; }
+  var S={mode:MODES[saved.mode]?saved.mode:'shoe', others:[0,1,2,3].indexOf(saved.others)>=0?saved.others:1,
+    teach:saved.teach!==false, show:!!saved.show, ask:saved.ask!==false, speed:['normal','rapida','casino'].indexOf(saved.speed)>=0?saved.speed:'normal'};
+  var SPEEDS={normal:380,rapida:230,casino:130};
+  var R=MODES[S.mode], SHOE=R.decks*52;
+  var g={bank:(typeof saved.bank==='number'&&saved.bank>=1)?saved.bank:200,
+    st:(saved.st&&typeof saved.st.hands==='number')?saved.st:zeroStats(),
+    shoe:[],pos:0,cut:0,rc:0,seen:[],rounds:0,dealer:[],hands:[],cur:0,others:[],hole:true,
+    pending:0,lastBet:0,ins:0,before:0,phase:'bet',fb:[],result:null,hint:false,shuffleMsg:'',guess:0,asked:false};
+  if(typeof g.st.cntTot!=='number'){ g.st.cntOk=0; g.st.cntTot=0; }
+  function save(){ store.set({mode:S.mode,others:S.others,teach:S.teach,show:S.show,ask:S.ask,speed:S.speed,bank:g.bank,st:g.st}); }
+  var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, reduceMotion?0:ms); }); }
+  var D=SPEEDS[S.speed];
+
+  function cval(r){ if(r==='A') return 1; if(r==='J'||r==='Q'||r==='K') return 10; return parseInt(r,10); }
+  function total(c){ var s=0,a=false; c.forEach(function(x){ s+=cval(x.r); if(x.r==='A') a=true; }); var soft=a&&s+10<=21; return {t:soft?s+10:s, soft:soft}; }
+  function isBJ(c){ return c.length===2 && total(c).t===21; }
+  function natural(h){ return !h.split && isBJ(h.c); }
+  function upVal(){ var r=g.dealer[0].r; return r==='A'?11:cval(r); }
+  function upName(){ var u=upVal(); return u===11?'A':String(u); }
+  function cur(){ return g.hands[g.cur]; }
+  function totalBet(){ return g.hands.reduce(function(a,h){ return a+h.bet; },0); }
+  function newShoe(){
+    SHOE=R.decks*52; var s=[]; for(var k=0;k<R.decks;k++) s=s.concat(deck());
+    for(var i=s.length-1;i>0;i--){ var j=rnd(i+1); var x=s[i]; s[i]=s[j]; s[j]=x; }
+    g.shoe=s; g.pos=1; g.cut=Math.floor(SHOE*R.pen); g.rc=0; g.seen=[]; g.rounds=0; pickTarget();
+    g.ss={hands:0,net:0,betOk:0,betTot:0,playOk:0,playTot:0,cntOk:0,cntTot:0,errs:[]};
+  }
+  function draw(vis){
+    if(g.pos>=g.shoe.length){ g.shoe=g.shoe.concat(deck()); SHOE=g.shoe.length; }
+    var c=g.shoe[g.pos++]; if(vis!==false){ g.rc+=hilo(c.r); g.seen.push(c); } return c;
+  }
+  function revealHole(){ g.hole=false; var c=g.dealer[1]; c._flip=true; g.rc+=hilo(c.r); g.seen.push(c); }
+  function decksLeft(){ return Math.max(0.5, Math.round((SHOE-g.pos)/52*R.step)/R.step); }
+  function tcExact(){ return g.rc/decksLeft(); }
+  function tcNow(){ return Math.floor(tcExact()); }
+  function recBet(tc){ if(tc<=1) return 1; if(tc===2) return 2; if(tc===3) return 4; if(tc===4) return 6; return 8; }
+  function players(){ return 1+S.others; }
+  // Single deck: el crupier baraja según las cartas que han salido, dentro de un rango de manos por número de jugadores.
+  var SD={1:{min:3,max:5,a:14,b:28},2:{min:3,max:4,a:20,b:30},3:{min:2,max:3,a:17,b:27},4:{min:2,max:3,a:23,b:31}};
+  function sdr(){ return SD[players()]; }
+  function pickTarget(){ var r=sdr(); g.target=r.a+rnd(r.b-r.a+1); }
+  function needShuffle(){
+    if(R.decks===1){ var r=sdr(), left=SHOE-g.pos;
+      return g.rounds>=r.max || (g.rounds>=r.min && g.pos>=g.target) || left<players()*3+10; }
+    return g.pos>=g.cut;
+  }
+  function canDouble(h){
+    if(!h||h.c.length!==2||h.aces||g.bank<h.bet) return false;
+    if(h.split&&!R.das) return false;
+    if(R.dblAny) return true;
+    var o=total(h.c); return !o.soft&&o.t>=9&&o.t<=11;
+  }
+  function canSplit(h){
+    return !!h && h.c.length===2 && !h.aces && cval(h.c[0].r)===cval(h.c[1].r) && g.hands.length<4 && g.bank>=h.bet;
+  }
+  var NAMES={H:'Pedir',S:'Plantarse',D:'Doblar',P:'Dividir'};
+  function pairName(c){ var v=cval(c.r); return v===1?'Ases':v===10?'dieces':v+'s'; }
+
+  function strategy(cards,d,tc,canD,canP){
+    var up=d===11?'A':d;
+    if(canP){
+      var v=cval(cards[0].r), p=false, dev=null;
+      if(v===1||v===8) p=true;
+      else if(v===10){ if(d===5&&tc>=5) dev='Par de dieces vs 5 con conteo real +5 o más: divide.'; else if(d===6&&tc>=4) dev='Par de dieces vs 6 con conteo real +4 o más: divide.'; }
+      else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
+      else if(v===7) p=d<=7;
+      else if(v===6) p=R.das? d<=6 : (d>=3&&d<=6);
+      else if(v===4) p=R.das&&(d===5||d===6);
+      else if(v===3) p=R.das? d<=7 : (d>=4&&d<=7);
+      else if(v===2) p=R.das? d<=7 : (d>=3&&d<=7);
+      if(dev) return {a:'P',why:dev,dev:true,pair:true};
+      if(p) return {a:'P',why:'Estrategia básica: par de '+pairName(cards[0])+' vs '+up+' → Dividir.',pair:true};
+    }
+    var o=total(cards), t=o.t, a=null, why=null, SDk=R.decks===1;
+    if(!o.soft){
+      if(t===16&&d===10&&tc>=0){a='S';why='16 vs 10 con conteo real 0 o más: plántate.';}
+      else if(t===16&&d===9&&tc>=5){a='S';why='16 vs 9 con conteo real +5 o más: plántate.';}
+      else if(t===15&&d===10&&tc>=4){a='S';why='15 vs 10 con conteo real +4 o más: plántate.';}
+      else if(t===12&&d===3&&tc>=2){a='S';why='12 vs 3 con conteo real +2 o más: plántate.';}
+      else if(t===12&&d===2&&tc>=3){a='S';why='12 vs 2 con conteo real +3 o más: plántate.';}
+      else if(t===12&&d===4&&tc<0){a='H';why='12 vs 4 con conteo real negativo: pide.';}
+      else if(t===12&&d===5&&tc<-2){a='H';why='12 vs 5 con conteo real −3 o menos: pide.';}
+      else if(t===12&&d===6&&tc<-1){a='H';why='12 vs 6 con conteo real −2 o menos: pide.';}
+      else if(t===13&&d===2&&tc<-1){a='H';why='13 vs 2 con conteo real −2 o menos: pide.';}
+      else if(t===13&&d===3&&tc<-2){a='H';why='13 vs 3 con conteo real −3 o menos: pide.';}
+      else if(!SDk&&canD&&t===11&&d===11&&tc>=1){a='D';why='11 vs A con conteo real +1 o más: dobla.';}
+      else if(canD&&t===10&&d===10&&tc>=4){a='D';why='10 vs 10 con conteo real +4 o más: dobla.';}
+      else if(canD&&t===10&&d===11&&tc>=4){a='D';why='10 vs A con conteo real +4 o más: dobla.';}
+      else if(!SDk&&canD&&t===9&&d===2&&tc>=1){a='D';why='9 vs 2 con conteo real +1 o más: dobla.';}
+      else if(canD&&t===9&&d===7&&tc>=3){a='D';why='9 vs 7 con conteo real +3 o más: dobla.';}
+      if(a) return {a:a,why:why,dev:true};
+      if(t>=17) a='S';
+      else if(t>=13) a=d<=6?'S':'H';
+      else if(t===12) a=(d>=4&&d<=6)?'S':'H';
+      else if(t===11) a=(d<=10||SDk)?'D':'H';
+      else if(t===10) a=d<=9?'D':'H';
+      else if(t===9) a=((d>=3&&d<=6)||(SDk&&d===2))?'D':'H';
+      else a='H';
+      if(a==='D'&&!canD) a='H';
+      return {a:a,why:'Estrategia básica: '+t+' duro vs '+up+' → '+NAMES[a]+'.'};
+    }
+    if(t>=19) a='S';
+    else if(t===18) a=(d>=3&&d<=6)?'D':(d<=8?'S':'H');
+    else if(t===17) a=(d>=3&&d<=6)?'D':'H';
+    else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
+    else a=(d>=5&&d<=6)?'D':'H';
+    if(a==='D'&&!canD) a=(t===18)?'S':'H';
+    return {a:a,why:'Estrategia básica: '+t+' suave vs '+up+' → '+NAMES[a]+'.'};
+  }
+  function recFor(h){ return strategy(h.c,upVal(),tcNow(),canDouble(h),canSplit(h)); }
+
+  /* --- Textos del entrenador --- */
+  function esc(s){ return String(s).replace(/[&<>]/g,function(x){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x]; }); }
+  function dk(d){ return String(d).replace('.',','); }
+  function fmt(n){ return String(Math.round(n*10)/10).replace('.',','); }
+  function pct(a,b){ return b? Math.round(a/b*100)+'%' : '–'; }
+  function seenChips(){
+    if(!g.seen.length) return '<p>Acaban de barajar: todavía no ha salido ninguna carta.</p>';
+    var out='', lo=0, hi=0;
+    g.seen.forEach(function(c){ var h=hilo(c.r); if(h>0) lo++; if(h<0) hi++; out+='<span class="chip'+(h>0?' p':h<0?' m':'')+'">'+c.r+' '+(h>0?'+1':h<0?'−1':'0')+'</span>'; });
+    return '<p>Desde que barajaron salieron '+g.seen.length+' cartas: '+lo+' bajas (2–6), '+hi+' altas (10–A) y '+(g.seen.length-lo-hi)+' neutras.</p><div class="chips">'+out+'</div>';
+  }
+  function tcMath(){
+    var left=SHOE-g.pos, d=decksLeft(), ex=g.rc/d;
+    return '<div class="math">Suma de las cartas vistas: '+sign(g.rc)+'<br>Cartas por salir: '+left+' ≈ '+dk(d)+(d===1?' mazo':' mazos')+'<br>Conteo real = '+sign(g.rc)+' ÷ '+dk(d)+' = '+ex.toFixed(2).replace('.',',')+' → <b>'+sign(Math.floor(ex))+'</b></div>';
+  }
+  function details(open){ return '<details'+(open?' open':'')+'><summary>¿De dónde sale este número?</summary>'+seenChips()+tcMath()+'</details>'; }
+  function betReason(tc){
+    if(tc<=0) return 'Salieron más cartas altas que bajas, o están parejas. Lo que queda favorece al crupier: apuesta lo mínimo.';
+    if(tc===1) return 'Mejora un poco, pero la casa sigue con ventaja. Quédate en la mínima.';
+    if(tc===2) return 'Quedan más 10 y Ases de lo normal: más blackjacks para ti y el crupier se pasa más. Ya tienes una pequeña ventaja.';
+    if(tc===3) return 'El mazo está bastante cargado de cartas altas. Ventaja clara para ti.';
+    return 'El mazo está lleno de cartas altas. Es el mejor momento para apostar fuerte.';
+  }
+  function playReason(rec,h,d){
+    var cards=h.c, o=total(cards), t=o.t, up=d===11?'A':d;
+    var pair=cards.length===2&&cval(cards[0].r)===cval(cards[1].r), v=cval(cards[0].r);
+    if(rec.a==='P'){
+      if(rec.dev) return rec.why+' Con tantas cartas altas por salir, cada mano que empieza con un 10 tiene muy buenas probabilidades contra un crupier débil.';
+      if(v===1) return 'Dos Ases juntos son un 12 suave débil. Separados, cada uno puede convertirse en 21 con un 10. Siempre se dividen.';
+      if(v===8) return 'Un 16 es la peor mano del blackjack. Dos manos que empiezan con 8 son mucho mejores. Siempre se dividen.';
+      if(v===9) return 'Un 18 no le gana a lo que suele hacer un '+up+'. Dos manos que empiezan con 9 tienen más chance.';
+      return 'Contra un '+up+' conviene convertir esta mano en dos: cada una empieza con una carta decente y el crupier tiene alta probabilidad de pasarse.';
+    }
+    if(pair&&canSplit(h)){
+      if(v===10) return 'Un 20 es excelente: no rompas una mano ganadora. '+(rec.a==='S'?'Plántate.':'');
+      if(v===5) return 'Dos cincos son un 10, una gran mano para doblar o pedir. No se dividen.';
+    }
+    if(rec.dev) return rec.why+' El conteo cambia la jugada normal: '+(tcNow()>0?'quedan muchas cartas altas, así que el crupier se pasa más y tú recibes más dieces.':'quedan muchas cartas bajas, así que pedir es menos peligroso.');
+    if(rec.a==='D') return 'Con '+t+' contra un '+up+' tienes ventaja: si te llega un 10 o una figura quedas muy fuerte. Doblar te deja ganar el doble justo cuando más te conviene.';
+    if(o.soft&&rec.a==='H') return 'Tu mano es suave (el As puede valer 1), así que pedir no te puede pasar de 21. Un '+t+' suave no alcanza contra un '+up+'.';
+    if(o.soft&&rec.a==='S') return 'Un '+t+' suave ya es buena mano contra un '+up+'.';
+    if(rec.a==='S'&&t>=17) return t+' es una mano fuerte: si pides, lo más probable es que te pases.';
+    if(rec.a==='S') return 'El crupier muestra un '+up+', una carta baja: tiene que pedir y se pasa muy seguido. Deja que él corra el riesgo.';
+    if(rec.a==='H'&&t<=11) return 'Con '+t+' ninguna carta te puede pasar. Pide siempre.';
+    return 'El crupier muestra un '+up+': lo más probable es que llegue a 17 o más. Si te plantas con '+t+' pierdes casi seguro, así que pide aunque te puedas pasar.';
+  }
+
+  /* --- Render --- */
+  function mk(label,cls,fn,dis,key){
+    var b=document.createElement('button'); b.className='btn '+(cls||''); b.textContent=label;
+    if(key){ var k=document.createElement('kbd'); k.textContent=key; b.appendChild(k); }
+    if(dis) b.disabled=true; b.addEventListener('click',fn); return b;
+  }
+  function gCard(c,back){
+    var e;
+    if(back){ e=document.createElement('div'); e.className='card gcard back'; e.setAttribute('role','img'); e.setAttribute('aria-label','carta tapada'); }
+    else { e=cardEl(c); e.classList.remove('pop'); e.classList.add('gcard'); if(c._flip){ e.classList.add('flip'); c._flip=false; } }
+    if(!c._shown){ e.classList.add('deal'); c._shown=true; }
+    return e;
+  }
+  function handTot(cards,hidden,nat){
+    if(!cards.length) return '';
+    if(hidden) return upName();
+    if(nat&&isBJ(cards)) return 'Blackjack';
+    var o=total(cards); if(o.t>21) return o.t+' · se pasa';
+    return (o.soft&&o.t<21)? (o.t-10)+' / '+o.t : String(o.t);
+  }
+  function setTot(e,cards,hidden,nat){
+    var tx=handTot(cards,hidden,nat); e.textContent=tx; e.style.visibility=tx?'visible':'hidden';
+    var t=cards.length?total(cards).t:0;
+    e.classList.toggle('bust',!hidden&&t>21); e.classList.toggle('bj',!hidden&&!!nat&&isBJ(cards));
+  }
+  function renderTop(){
+    $('g-bank').textContent=fmt(g.bank);
+    $('g-tc').style.display=(S.show&&g.phase!=='ask')?'':'none';
+    $('g-tcv').textContent=sign(tcNow());
+    $('g-modepill').textContent=R.name;
+    var m=$('g-meter');
+    if(R.decks===1){
+      var rr=sdr(), dots='';
+      for(var i=0;i<rr.max;i++) dots+='<i class="'+(i<g.rounds?'used':(i>=rr.min?'maybe':''))+'"></i>';
+      m.innerHTML='<span>Quedan '+(SHOE-g.pos)+' cartas · baraja tras '+rr.min+'–'+rr.max+' manos</span><div class="dots">'+dots+'</div>';
+    } else {
+      var p=Math.min(100,g.pos/SHOE*100);
+      m.innerHTML='<span>Shoe jugado '+Math.round(p)+'% · quedan ~'+dk(decksLeft())+' mazos</span><div class="meter"><i style="width:'+p+'%"></i><em style="left:75%"></em></div>';
+    }
+    $('g-statline').textContent='Manos '+g.st.hands+' · Ganancia '+(g.st.net>=0?'+':'−')+fmt(Math.abs(g.st.net))+' · Conteo '+pct(g.st.cntOk,g.st.cntTot)+' · Apuestas '+pct(g.st.betOk,g.st.betTot)+' · Jugadas '+pct(g.st.playOk,g.st.playTot);
+  }
+  function renderTable(){
+    var dz=$('g-dz'); dz.innerHTML='';
+    g.dealer.forEach(function(c,i){ dz.appendChild(gCard(c,i===1&&g.hole)); });
+    setTot($('g-dtot'),g.dealer,g.hole,true);
+    var oz=$('g-oz'); oz.innerHTML='';
+    g.others.forEach(function(h,i){
+      var w=document.createElement('div'); w.className='ohand';
+      var cs=document.createElement('div'); cs.className='ocards'; h.forEach(function(c){ cs.appendChild(gCard(c,c._down)); });
+      var tb=document.createElement('span'); tb.className='tot sm';
+      var hid=h.some(function(c){ return c._down; });
+      if(hid){ tb.textContent='?'; tb.style.visibility=h.length?'visible':'hidden'; tb.classList.remove('bust','bj'); } else setTot(tb,h,false,true);
+      var nm=document.createElement('div'); nm.className='oname'; nm.textContent='Jugador '+(i+1);
+      w.appendChild(cs); w.appendChild(tb); w.appendChild(nm); oz.appendChild(w);
+    });
+    oz.style.display=g.others.length?'':'none';
+    var pz=$('g-pz'), multi=g.hands.length>1; pz.innerHTML='';
+    pz.classList.toggle('many',g.hands.length>2);
+    if(!g.hands.length){ var e=document.createElement('div'); e.className='gcards'; pz.appendChild(e); }
+    g.hands.forEach(function(h,i){
+      var w=document.createElement('div'); w.className='phand'+(multi&&g.phase==='play'&&i===g.cur?' active':'')+(multi&&h.done?' done':'');
+      var cs=document.createElement('div'); cs.className='gcards'; h.c.forEach(function(c){ cs.appendChild(gCard(c)); }); w.appendChild(cs);
+      if(multi){
+        var tb=document.createElement('span'); tb.className='tot'; setTot(tb,h.c,false,false); w.appendChild(tb);
+        var bt=document.createElement('span'); bt.className='hbet'; bt.textContent='Mano '+(i+1)+' · '+fmt(h.bet)+(h.dbl?' (doblada)':''); w.appendChild(bt);
+      }
+      pz.appendChild(w);
+    });
+    document.querySelector('.yourow').style.display=multi?'none':'';
+    var pt=$('g-ptot');
+    if(multi){ pt.textContent=g.hands.length+' manos'; pt.style.visibility='visible'; pt.classList.remove('bust','bj'); }
+    else if(g.hands.length) setTot(pt,g.hands[0].c,false,natural(g.hands[0]));
+    else { pt.textContent=''; pt.style.visibility='hidden'; }
+    var amt=(g.phase==='bet'||g.phase==='ask')?g.pending:totalBet(), spot=$('g-spot'); spot.innerHTML='';
+    if(amt){
+      var st=document.createElement('div'), rem=amt, discs=[]; st.className='cstack';
+      [5,2,1].forEach(function(u){ while(rem>=u){ discs.push(u); rem-=u; } });
+      discs.slice(0,8).forEach(function(u,i){ var d=document.createElement('i'); d.className='disc c'+u; d.style.top=(-i*3)+'px'; st.appendChild(d); });
+      spot.appendChild(st);
+    }
+    var b=document.createElement('b'); if(amt) b.textContent=fmt(amt); else { b.className='empty'; b.textContent='Apuesta'; } spot.appendChild(b);
+  }
+  function renderBanner(){
+    var bn=$('g-banner'), r=g.result;
+    if(g.phase==='done'&&r){
+      var title = r.kind==='bj'?'Blackjack +'+fmt(r.net) : r.net>0?'Ganas +'+fmt(r.net) : r.net<0?'Pierdes −'+fmt(Math.abs(r.net)) : 'Empate';
+      var kind = r.kind==='bj'?'bj' : r.net>0?'win' : r.net<0?'lose' : 'push';
+      bn.className='banner '+kind; bn.innerHTML='<h3>'+title+'</h3><p>'+esc(r.text)+'</p>'; bn.hidden=false;
+    } else if(g.phase==='shuffle'){
+      bn.className='banner'; bn.innerHTML='<h3>Barajando</h3><p>'+esc(g.shuffleMsg)+'</p>'; bn.hidden=false;
+      if(g.ss){ var qq=g.ss, tt2=qq.betTot+qq.playTot+qq.cntTot; bn.innerHTML+='<p><b>Precisión del mazo: '+pct(qq.betOk+qq.playOk+qq.cntOk,tt2)+'</b></p>'; }
+    } else if(g.phase==='broke'){
+      bn.className='banner lose'; bn.innerHTML='<h3>Sin fichas</h3><p>Así es la varianza: incluso contando bien, pasa.</p>'; bn.hidden=false;
+    } else bn.hidden=true;
+  }
+  function renderCoach(){
+    var c=$('g-coach'), T=S.teach||g.hint, html='';
+    var fb=g.fb.map(function(f){ return f.info? '<div class="fb">'+esc(f.t)+'</div>' : '<div class="fb '+(f.ok?'ok':'no')+'">'+(f.ok?'✓ ':'✗ ')+esc(f.t)+'</div>'; }).join('');
+    if(g.phase==='shuffle'&&g.ss){
+      var q=g.ss, tot=q.betTot+q.playTot+q.cntTot, ok=q.betOk+q.playOk+q.cntOk;
+      var rows='<div class="math">Manos: '+q.hands+' · Ganancia: '+(q.net>=0?'+':'−')+fmt(Math.abs(q.net))+'<br>Conteo: '+q.cntOk+'/'+q.cntTot+' · Apuestas: '+q.betOk+'/'+q.betTot+' · Jugadas: '+q.playOk+'/'+q.playTot+'</div>';
+      var errs=q.errs.length? '<p><b>Tus errores en este mazo:</b></p><ul class="errs">'+q.errs.slice(0,8).map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+(q.errs.length>8?'<p class="note">y '+(q.errs.length-8)+' más.</p>':'') : '<p>Sin errores en este mazo. ¡Muy bien!</p>';
+      c.innerHTML='<div class="coachbox"><h4>Resumen del mazo</h4><div class="ch">Precisión '+pct(ok,tot)+'</div>'+rows+errs+'<p class="note">Al barajar, el conteo vuelve a 0.</p></div>'; c.style.display=''; return;
+    }
+    if(g.phase==='ask'){
+      html='<div class="ch">¿Cuál es tu conteo real?</div><p>Suma las cartas que has visto desde que barajaron y divide entre los mazos que quedan ('+(R.decks===1?'en cuartos: 0,75 o 0,5':'en medios: 4,5 · 4 · 3,5…')+'). Redondea hacia abajo.</p>';
+      c.innerHTML='<div class="coachbox"><h4>Tu turno de contar</h4>'+html+'</div>'+fb; c.style.display=''; return;
+    }
+    if(T){
+      if(g.phase==='bet'){
+        var tc=tcNow(), rb=recBet(tc);
+        var ctx=R.decks===1?' Mano '+(g.rounds+1)+': con '+players()+(players()===1?' jugador':' jugadores')+' el crupier baraja tras '+sdr().min+'–'+sdr().max+' manos, según cuántas cartas salgan.':'';
+        html='<div class="ch">Conteo real '+sign(tc)+' → apuesta '+rb+(rb===1?' ficha':' fichas')+'</div><p>'+betReason(tc)+ctx+'</p>'+details(false);
+      } else if(g.phase==='ins'){
+        var tc2=tcNow(), take=tc2>=R.ins;
+        html='<div class="ch">'+(take?'Toma el seguro':'No tomes el seguro')+'</div><p>El seguro cuesta la mitad de tu apuesta y paga 2 a 1 si la carta tapada es un 10 o figura. Solo conviene con conteo real +'+R.ins+' o más'+(R.decks===1?' en single deck':' en un shoe')+'. Ahora es '+sign(tc2)+'.</p>'+details(false);
+      } else if(g.phase==='play'){
+        var h=cur(), rec=recFor(h), tt=total(h.c);
+        var note=(!R.dblAny&&h.c.length===2&&!canDouble(h)&&strategy(h.c,upVal(),tcNow(),true,false).a==='D'&&rec.a!=='P')?' Aquí convendría doblar, pero en esta mesa solo se dobla con 9, 10 u 11'+(h.split?' y no después de dividir':'')+'.':'';
+        var pre=g.hands.length>1?'Mano '+(g.cur+1)+' de '+g.hands.length+': ':'';
+        html='<div class="ch">'+NAMES[rec.a]+'</div><p>'+pre+'Tienes '+(tt.soft?tt.t+' suave':tt.t)+' contra un '+upName()+'. Conteo real '+sign(tcNow())+'. '+esc(playReason(rec,h,upVal()))+note+'</p>';
+      } else if(g.phase==='done'){
+        html='<div class="ch">Conteo real ahora: '+sign(tcNow())+'</div><p>Con las cartas que acaban de salir, este es el número para tu próxima apuesta.'+(R.decks===1&&needShuffle()?' Salieron suficientes cartas: el crupier va a barajar.':'')+'</p>';
+      } else if(g.phase==='shuffle'){
+        html='<div class="ch">El conteo vuelve a 0</div><p>Mazo nuevo: empiezas a contar de cero con la primera carta que salga.</p>';
+      }
+    }
+    c.innerHTML=(html?'<div class="coachbox"><h4>Entrenador</h4>'+html+'</div>':'')+fb;
+    c.style.display=(fb||html)?'':'none';
+  }
+  function barHint(){
+    var T=S.teach||g.hint;
+    if(!T){
+      if(g.phase==='play'){ var hb=document.createElement('button'); hb.className='barhint'; hb.innerHTML='<span class="bh">¿Dudas con esta mano?</span><span>Ver pista</span>'; hb.addEventListener('click',function(){ g.hint=true; refresh(); }); return hb; }
+      return null;
+    }
+    var tx=null;
+    if(g.phase==='bet'){ var tc=tcNow(); tx='Conteo real '+sign(tc)+' → apuesta <b>'+recBet(tc)+'</b>'; }
+    else if(g.phase==='ins'){ tx=(tcNow()>=R.ins?'<b>Toma el seguro</b>':'<b>Sin seguro</b>')+' · conteo real '+sign(tcNow()); }
+    else if(g.phase==='play'){ var rec=recFor(cur()); tx='<b>'+NAMES[rec.a]+'</b>'+(rec.dev?' · cambio por conteo':'')+' · conteo real '+sign(tcNow()); }
+    if(!tx) return null;
+    var d=document.createElement('button'); d.className='barhint'; d.innerHTML='<span class="bh">'+tx+'</span><span>¿Por qué? ↓</span>';
+    d.addEventListener('click',function(){ $('g-coach').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'center'}); });
+    return d;
+  }
+  function renderBar(){
+    var b=$('g-bar'), T=S.teach||g.hint; b.innerHTML='';
+    var hb=barHint(); if(hb) b.appendChild(hb);
+    if(g.phase==='ask'){
+      var box=document.createElement('div'); box.className='askrow';
+      var num=document.createElement('div'); num.className='asknum'; num.textContent=sign(g.guess); num.setAttribute('aria-live','polite');
+      box.appendChild(mk('−','step',function(){ g.guess--; num.textContent=sign(g.guess); }));
+      box.appendChild(num);
+      box.appendChild(mk('+','step',function(){ g.guess++; num.textContent=sign(g.guess); }));
+      box.appendChild(mk('Confirmar','primary',confirmCount,false,'Enter'));
+      b.appendChild(box);
+    } else if(g.phase==='bet'){
+      var chips=document.createElement('div'); chips.className='chips3';
+      [1,2,5].forEach(function(u){
+        var c=document.createElement('button'); c.className='gchip c'+u; c.textContent=u; c.setAttribute('aria-label','Agregar '+u+(u===1?' ficha':' fichas'));
+        c.disabled=g.pending+u>g.bank; c.addEventListener('click',function(){ addChip(u); }); chips.appendChild(c);
+      });
+      b.appendChild(chips);
+      var row=document.createElement('div'); row.className='row';
+      row.appendChild(mk('Borrar','',clearBet,!g.pending));
+      if(S.teach){ var rb=Math.min(recBet(tcNow()),Math.floor(g.bank)); row.appendChild(mk('Recomendada ('+rb+')','',function(){ g.pending=rb; refresh(); },rb<1)); }
+      else if(g.lastBet&&g.lastBet<=g.bank) row.appendChild(mk('Repetir ('+g.lastBet+')','',function(){ g.pending=g.lastBet; refresh(); }));
+      row.appendChild(mk('Repartir','primary',deal,!g.pending,'Enter'));
+      b.appendChild(row);
+    } else if(g.phase==='ins'){
+      var take=tcNow()>=R.ins, r2=document.createElement('div'); r2.className='row';
+      r2.appendChild(mk('Tomar seguro',T&&take?'rec':'',function(){ insurance(true); },g.bank<g.hands[0].bet/2,'S'));
+      r2.appendChild(mk('Sin seguro',T&&!take?'rec':'',function(){ insurance(false); },false,'N'));
+      b.appendChild(r2);
+    } else if(g.phase==='play'){
+      var h=cur(), rec=recFor(h), r3=document.createElement('div'); r3.className='row acts';
+      r3.appendChild(mk('Pedir',T&&rec.a==='H'?'rec':'',function(){ act('H'); },false,'H'));
+      r3.appendChild(mk('Plantarse',T&&rec.a==='S'?'rec':'',function(){ act('S'); },false,'S'));
+      r3.appendChild(mk('Doblar',T&&rec.a==='D'?'rec':'',function(){ act('D'); },!canDouble(h),'D'));
+      if(canSplit(h)) r3.appendChild(mk('Dividir',T&&rec.a==='P'?'rec':'',function(){ act('P'); },false,'P'));
+      b.appendChild(r3);
+    } else if(g.phase==='done'){
+      b.appendChild(mk('Siguiente mano','primary',next,false,'Enter'));
+    } else if(g.phase==='shuffle'){
+      b.appendChild(mk('Barajar y seguir','primary',afterShuffle,false,'Enter'));
+    } else if(g.phase==='broke'){
+      b.appendChild(mk('Empezar otra vez con 200','primary',function(){ g.bank=200; newShoe(); g.phase='bet'; g.fb=[]; refresh(); }));
+    } else {
+      var w=document.createElement('div'); w.className='wait'; w.textContent='Repartiendo…'; b.appendChild(w);
+    }
+  }
+  function upd(){ renderTop(); renderTable(); }
+  function refresh(){ renderTop(); renderTable(); renderBar(); renderCoach(); renderBanner(); renderSheet(); save(); }
+  function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
+  function wrong(t){ g.fb.push({ok:false,t:t}); if(g.ss) g.ss.errs.push(t); }
+
+  /* --- Pregunta de conteo --- */
+  function toBetPhase(){
+    g.phase='bet';
+    if(S.ask&&g.seen.length&&!g.asked){ g.phase='ask'; g.guess=0; }
+  }
+  function confirmCount(){
+    if(g.phase!=='ask') return;
+    var tc=tcNow(), ex=tcExact(); g.st.cntTot++; g.ss.cntTot++; g.asked=true;
+    if(g.guess===tc){ g.st.cntOk++; g.ss.cntOk++; g.fb.push({ok:true,t:'Conteo correcto: '+sign(tc)+'.'}); }
+    else {
+      var close=(g.guess===Math.round(ex)||g.guess===Math.ceil(ex));
+      wrong('Dijiste '+sign(g.guess)+'; el conteo real era '+sign(tc)+' ('+sign(g.rc)+' ÷ '+dk(decksLeft())+' = '+ex.toFixed(2).replace('.',',')+').'+(close?' Casi: recuerda redondear hacia abajo.':' Abre "¿De dónde sale este número?" para ver las cartas.'));
+    }
+    g.phase='bet'; vib(8); refresh();
+  }
+
+  /* --- Flujo de la mano --- */
+  function addChip(u){ if(g.phase!=='bet'||g.pending+u>g.bank) return; g.pending+=u; vib(8); refresh(); }
+  function clearBet(){ g.pending=0; refresh(); }
+  async function deal(){
+    if(g.phase!=='bet'||!g.pending) return;
+    var u=g.pending, tc=tcNow(), rb=recBet(tc);
+    g.result=null; g.hint=false; g.st.betTot++; g.ss.betTot++;
+    if(u===rb){ g.st.betOk++; g.ss.betOk++; g.fb.push({ok:true,t:'Apuesta correcta: conteo real '+sign(tc)+' → '+rb+'.'}); }
+    else wrong('Apostaste '+u+'; con conteo real '+sign(tc)+' tocaba '+rb+'.');
+    g.before=g.bank; g.lastBet=u; g.pending=0; g.bank-=u; g.rounds++; g.ins=0; g.hole=true;
+    g.hands=[{c:[],bet:u,dbl:false,split:false,aces:false,done:false}]; g.cur=0;
+    g.dealer=[]; g.others=[]; for(var i=0;i<S.others;i++) g.others.push([]);
+    g.phase='deal'; refresh();
+    for(var r=0;r<2;r++){
+      for(var k=0;k<g.others.length;k++){ if(R.decks===1){ var oc=draw(false); oc._down=true; g.others[k].push(oc); } else g.others[k].push(draw()); upd(); await sleep(D); }
+      g.hands[0].c.push(draw()); upd(); await sleep(D);
+      g.dealer.push(draw(r===0)); upd(); await sleep(D);
+    }
+    if(upVal()===11){ g.phase='ins'; refresh(); } else await peek();
+  }
+  async function insurance(take){
+    if(g.phase!=='ins') return;
+    var tc=tcNow(), right=tc>=R.ins; g.st.playTot++; g.ss.playTot++;
+    if(take===right){ g.st.playOk++; g.ss.playOk++; g.fb.push({ok:true,t:take?'Bien tomado el seguro (conteo real '+sign(tc)+').':'Bien sin seguro: solo conviene desde +'+R.ins+'.'}); }
+    else wrong(take?'El seguro solo conviene con conteo real +'+R.ins+' o más; era '+sign(tc)+'.':'Con conteo real '+sign(tc)+' convenía tomar el seguro.');
+    if(take){ var cost=Math.min(g.bank,g.hands[0].bet/2); g.bank-=cost; g.ins=cost; }
+    g.phase='deal'; refresh(); await peek();
+  }
+  async function peek(){
+    var u=upVal(), h0=g.hands[0];
+    if((u===11||u===10)&&isBJ(g.dealer)){
+      revealHole(); revealAllOthers(); upd(); await sleep(D*1.5);
+      if(g.ins) g.bank+=g.ins*3;
+      if(natural(h0)){ g.bank+=h0.bet; return end('push','Los dos tienen blackjack.'); }
+      return end('lose','El crupier tiene blackjack.'+(g.ins?' El seguro te devuelve la apuesta.':''));
+    }
+    if(g.ins) g.fb.push({info:true,t:'El crupier no tenía blackjack: el seguro se pierde, la mano sigue.'});
+    for(var k=0;k<g.others.length;k++) await autoPlay(g.others[k]);
+    if(natural(h0)){ g.bank+=h0.bet*2.5; h0.done=true; return dealerPlay(true); }
+    g.phase='play'; refresh();
+  }
+  function revealOthers(h){ var any=false; h.forEach(function(c){ if(c._down){ c._down=false; c._flip=true; g.rc+=hilo(c.r); g.seen.push(c); any=true; } }); return any; }
+  function revealAllOthers(){ var any=false; g.others.forEach(function(h){ if(revealOthers(h)) any=true; }); return any; }
+  async function autoPlay(h){
+    var d=upVal();
+    if(isBJ(h)){ if(revealOthers(h)){ upd(); await sleep(D); } return; }
+    while(true){ var t=total(h).t; if(t>=17||(t>=12&&d<=6)) break; h.push(draw()); upd(); await sleep(D); }
+    if(total(h).t>21&&revealOthers(h)){ upd(); await sleep(D); }
+  }
+  async function act(a){
+    if(g.phase!=='play') return;
+    var h=cur(), canD=canDouble(h), canP=canSplit(h);
+    if(a==='D'&&!canD) return; if(a==='P'&&!canP) return;
+    var rec=strategy(h.c,upVal(),tcNow(),canD,canP); g.st.playTot++; g.ss.playTot++;
+    var pre=g.hands.length>1?'Mano '+(g.cur+1)+': ':'';
+    if(a===rec.a){ g.st.playOk++; g.ss.playOk++; g.fb.push({ok:true,t:pre+NAMES[a]+', bien jugado.'+(rec.dev?' Cambio por conteo: '+rec.why:'')}); }
+    else wrong(pre+'Elegiste '+NAMES[a]+'; lo correcto era '+NAMES[rec.a]+'. '+rec.why);
+    g.hint=false; g.phase='deal'; refresh();
+    if(a==='P'){
+      g.bank-=h.bet; var aces=h.c[0].r==='A';
+      var nh={c:[h.c.pop()],bet:h.bet,dbl:false,split:true,aces:aces,done:false};
+      h.split=true; h.aces=aces; g.hands.splice(g.cur+1,0,nh);
+      upd(); await sleep(D);
+      h.c.push(draw()); upd(); await sleep(D);
+      if(aces){ nh.c.push(draw()); upd(); await sleep(D); h.done=true; nh.done=true; g.cur=g.hands.length; return dealerPlay(false); }
+      if(total(h.c).t===21) return advance();
+      g.phase='play'; refresh(); return;
+    }
+    if(a==='H'){
+      h.c.push(draw()); upd(); await sleep(D);
+      var t=total(h.c).t;
+      if(t>=21) return advance();
+      g.phase='play'; refresh(); return;
+    }
+    if(a==='D'){
+      g.bank-=h.bet; h.bet*=2; h.dbl=true; h.c.push(draw()); upd(); await sleep(D);
+      return advance();
+    }
+    return advance();
+  }
+  async function advance(){
+    cur().done=true; g.cur++;
+    while(g.cur<g.hands.length){
+      var h=cur();
+      if(h.c.length===1){ g.phase='deal'; upd(); await sleep(D/2); h.c.push(draw()); upd(); await sleep(D); }
+      if(h.done||total(h.c).t===21){ h.done=true; g.cur++; continue; }
+      g.phase='play'; refresh(); return;
+    }
+    return dealerPlay(false);
+  }
+  async function dealerPlay(paidBJ){
+    g.phase='deal'; revealHole(); upd(); await sleep(D*1.3);
+    var mine=!paidBJ&&g.hands.some(function(h){ return total(h.c).t<=21; });
+    var alive=mine||g.others.some(function(h){ return total(h).t<=21; });
+    if(alive){ while(total(g.dealer).t<17){ g.dealer.push(draw()); upd(); await sleep(D*1.3); } }
+    if(revealAllOthers()){ upd(); await sleep(D); }
+    if(paidBJ) return end('bj','Te pagan 3 a 2.');
+    var d=total(g.dealer).t, lines=[];
+    g.hands.forEach(function(h,i){
+      var p=total(h.c).t, tx;
+      if(p>21) tx='te pasaste con '+p;
+      else if(d>21){ g.bank+=h.bet*2; tx='ganas, el crupier se pasa con '+d; }
+      else if(p>d){ g.bank+=h.bet*2; tx='ganas, '+p+' contra '+d; }
+      else if(p===d){ g.bank+=h.bet; tx='empate a '+p; }
+      else tx='pierdes, '+p+' contra '+d;
+      lines.push(g.hands.length>1?'Mano '+(i+1)+': '+tx:tx.charAt(0).toUpperCase()+tx.slice(1));
+    });
+    end('', lines.join(' · ')+'.');
+  }
+  function end(kind,text){
+    var net=g.bank-g.before; g.st.hands++; g.st.net+=net; g.ss.hands++; g.ss.net+=net;
+    g.result={kind:kind,text:text,net:net}; g.phase='done';
+    vib(net<0?30:[10,40,10]); refresh();
+  }
+  function next(){
+    g.fb=[]; g.result=null; g.hands=[]; g.cur=0; g.dealer=[]; g.others=[]; g.hole=true; g.hint=false; g.asked=false;
+    if(g.bank<1) g.phase='broke';
+    else if(needShuffle()){
+      g.phase='shuffle';
+      g.shuffleMsg=(R.decks===1? 'El crupier recoge las cartas tras '+g.rounds+(g.rounds===1?' mano':' manos')+' con '+players()+(players()===1?' jugador':' jugadores')+'.' : 'Salió la carta de corte.')+' Mira el resumen del mazo abajo.';
+    } else toBetPhase();
+    refresh();
+  }
+  function afterShuffle(){ newShoe(); g.fb=[]; g.asked=false; toBetPhase(); refresh(); }
+
+  /* --- Ajustes --- */
+  function canConfigure(){ return g.phase==='bet'||g.phase==='ask'||g.phase==='shuffle'||g.phase==='broke'; }
+  function renderSheet(){
+    var lock=!canConfigure();
+    document.querySelectorAll('#g-modeseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.m===S.mode?'true':'false'); b.disabled=lock; });
+    document.querySelectorAll('#g-othseg button').forEach(function(b){ b.setAttribute('aria-pressed',+b.dataset.o===S.others?'true':'false'); b.disabled=lock; });
+    $('g-locknote').hidden=!lock;
+    $('g-rules').textContent=R.rules;
+    $('g-teach').checked=S.teach; $('g-show').checked=S.show; $('g-ask').checked=S.ask;
+    document.querySelectorAll('#g-speedseg button').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.s===S.speed?'true':'false'); });
+    document.querySelectorAll('.lang button').forEach(function(b){ b.disabled=!canConfigure(); });
+  }
+  function openSheet(){ $('g-sheet').hidden=false; renderSheet(); $('g-close').focus(); }
+  function closeSheet(){ $('g-sheet').hidden=true; }
+  $('g-gear').addEventListener('click',openSheet);
+  $('g-modepill').addEventListener('click',openSheet);
+  $('g-close').addEventListener('click',closeSheet);
+  $('g-sheet').addEventListener('click',function(e){ if(e.target===this) closeSheet(); });
+  document.querySelectorAll('#g-modeseg button').forEach(function(b){ b.addEventListener('click',function(){
+    if(!canConfigure()||S.mode===b.dataset.m) return;
+    S.mode=b.dataset.m; R=MODES[S.mode]; newShoe(); g.pending=0; g.fb=[]; g.result=null; g.asked=false;
+    if(g.bank<1) g.phase='broke'; else toBetPhase(); refresh();
+  }); });
+  document.querySelectorAll('#g-othseg button').forEach(function(b){ b.addEventListener('click',function(){
+    if(!canConfigure()) return; S.others=+b.dataset.o; if(R.decks===1) pickTarget(); refresh();
+  }); });
+  document.querySelectorAll('#g-speedseg button').forEach(function(b){ b.addEventListener('click',function(){ S.speed=b.dataset.s; D=SPEEDS[S.speed]; refresh(); }); });
+  $('g-teach').addEventListener('change',function(){ S.teach=this.checked; refresh(); });
+  $('g-show').addEventListener('change',function(){ S.show=this.checked; refresh(); });
+  $('g-ask').addEventListener('change',function(){ S.ask=this.checked; if(g.phase==='ask'&&!S.ask) g.phase='bet'; else if(g.phase==='bet'&&S.ask&&!g.pending) toBetPhase(); refresh(); });
+  $('g-reset').addEventListener('click',function(){
+    if(!canConfigure()&&g.phase!=='done') return;
+    g.bank=200; g.st=zeroStats(); g.pending=0; g.lastBet=0; g.fb=[]; g.result=null; g.hands=[]; g.dealer=[]; g.others=[]; g.asked=false;
+    newShoe(); g.phase='bet'; refresh(); closeSheet();
+  });
+
+  /* --- Teclado (computadora) --- */
+  document.addEventListener('keydown',function(e){
+    if(!$('p-play').classList.contains('on')||e.metaKey||e.ctrlKey||e.altKey) return;
+    if(!$('g-sheet').hidden){ if(e.key==='Escape') closeSheet(); return; }
+    var tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='SELECT') return;
+    var k=e.key.toLowerCase();
+    if(g.phase==='play'){ if(k==='h') act('H'); else if(k==='s') act('S'); else if(k==='d') act('D'); else if(k==='p') act('P'); }
+    else if(g.phase==='ins'){ if(k==='s') insurance(true); else if(k==='n') insurance(false); }
+    else if(g.phase==='ask'){
+      if(k==='arrowup'||k==='+'||k==='='){ e.preventDefault(); g.guess++; refresh(); }
+      else if(k==='arrowdown'||k==='-'){ e.preventDefault(); g.guess--; refresh(); }
+      else if(k==='enter'){ e.preventDefault(); confirmCount(); }
+    }
+    else if(g.phase==='bet'){
+      if(k==='1'||k==='2'||k==='5') addChip(+k);
+      else if(k==='backspace') clearBet();
+      else if(k==='enter'&&g.pending){ e.preventDefault(); deal(); }
+    }
+    else if(k==='enter'){
+      e.preventDefault();
+      if(g.phase==='done') next();
+      else if(g.phase==='shuffle') afterShuffle();
+    }
+  });
+
+  /* Pantalla compacta en la mesa: oculta el título */
+  function syncPlaying(){ document.body.classList.toggle('playing',$('p-play').classList.contains('on')); }
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.addEventListener('click',syncPlaying); });
+
+
+  /* Language switch */
+  (function(){
+    var ok=typeof window.__hiloSetLang==='function';
+    document.querySelectorAll('.lang').forEach(function(el){ if(!ok) el.style.display='none'; });
+    document.querySelectorAll('.lang button').forEach(function(b){ b.addEventListener('click',function(){ if(b.getAttribute('aria-pressed')!=='true'&&ok) window.__hiloSetLang(b.dataset.l); }); });
+  })();
+  newShoe(); toBetPhase(); refresh(); syncPlaying();
+})();
+</script>
+</body>
+</html>
