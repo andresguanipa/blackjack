@@ -380,6 +380,14 @@ body{min-height:100vh}
   .ocards .gcard{margin-left:-38px}
   .tabs button{font-size:15px;padding:12px 6px}
 }
+.gresult{border-radius:12px;padding:10px 14px;text-align:center;background:var(--felt-deep);border:1px solid var(--brass);animation:bannerIn2 .25s ease-out}
+.gresult h3{font-family:var(--display);font-size:24px;margin:0;color:var(--ink);letter-spacing:0}
+.gresult.win h3,.gresult.bj h3{color:var(--good)}
+.gresult.lose h3{color:var(--bad)}
+.gresult p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+@keyframes bannerIn2{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.gresult{animation:none}}
+@media (min-width:1400px){.gresult h3{font-size:30px}.gresult p{font-size:16px}}
 </style>
 </head>
 <body>
@@ -1044,7 +1052,7 @@ body{min-height:100vh}
   }
   function renderBanner(){
     var bn=$('g-banner'), r=g.result;
-    if(g.phase==='done'&&r){
+    if(false&&g.phase==='done'&&r){
       var title = r.kind==='bj'?'Blackjack +'+fmt(r.net) : r.net>0?'You win +'+fmt(r.net) : r.net<0?'You lose −'+fmt(Math.abs(r.net)) : 'Push';
       var kind = r.kind==='bj'?'bj' : r.net>0?'win' : r.net<0?'lose' : 'push';
       bn.className='banner '+kind; bn.innerHTML='<h3>'+title+'</h3><p>'+esc(r.text)+'</p>'; bn.hidden=false;
@@ -1142,6 +1150,13 @@ body{min-height:100vh}
       if(canSplit(h)) r3.appendChild(mk('Split',T&&rec.a==='P'?'rec':'',function(){ act('P'); },false,'P'));
       b.appendChild(r3);
     } else if(g.phase==='done'){
+      var r=g.result;
+      if(r){
+        var ttl = r.kind==='bj'?'Blackjack +'+fmt(r.net) : r.net>0?WINW+' +'+fmt(r.net) : r.net<0?LOSEW+' −'+fmt(Math.abs(r.net)) : PUSHW;
+        var kd = r.kind==='bj'?'bj' : r.net>0?'win' : r.net<0?'lose' : 'push';
+        var rc=document.createElement('div'); rc.className='gresult '+kd; rc.setAttribute('role','status');
+        rc.innerHTML='<h3>'+ttl+'</h3><p>'+esc(r.text)+'</p>'; b.appendChild(rc);
+      }
       b.appendChild(mk('Next hand','primary',next,false,'Enter'));
     } else if(g.phase==='shuffle'){
       b.appendChild(mk('Shuffle and continue','primary',afterShuffle,false,'Enter'));
@@ -1151,6 +1166,7 @@ body{min-height:100vh}
       var w=document.createElement('div'); w.className='wait'; w.textContent='Dealing…'; b.appendChild(w);
     }
   }
+  var WINW='You win', LOSEW='You lose', PUSHW='Push';
   function upd(){ renderTop(); renderTable(); }
   function refresh(){ renderTop(); renderTable(); renderBar(); renderCoach(); renderBanner(); renderSheet(); save(); }
   function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
