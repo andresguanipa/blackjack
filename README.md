@@ -1,4 +1,4 @@
-# Hi-Lo Trainer · Entrenador Hi-Lo
+# Blackjack Trainer · Entrenador de Blackjack
 
 A bilingual (English / Español) web app for learning and practicing the Hi-Lo card counting system in blackjack. It installs as an app (PWA) and works offline.
 

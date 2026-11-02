@@ -1,6 +1,6 @@
 {
-  "name": "Hi-Lo Trainer · Entrenador Hi-Lo",
-  "short_name": "Hi-Lo",
+  "name": "Blackjack Trainer · Entrenador de Blackjack",
+  "short_name": "Blackjack",
   "description": "Learn and practice Hi-Lo card counting in blackjack (English / Español). Made by Andres Guanipa.",
   "lang": "es",
   "start_url": "./",

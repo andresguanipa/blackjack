@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="author" content="Andres Guanipa">
 <meta name="copyright" content="© 2026 Andres Guanipa">
-<title>Hi-Lo Trainer</title>
+<title>Blackjack Trainer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -255,7 +255,7 @@ body.playing .wrap{padding-top:10px;gap:10px}
 .hands.many .gcards .gcard{margin-left:-22px}
 .gbar{padding:8px 16px calc(10px + env(safe-area-inset-bottom));gap:8px}
 .gbar .btn{padding:12px 6px;font-size:15px}
-.barhint{padding:6px 10px}
+.barhint{padding:6px 10px;background:linear-gradient(rgba(214,168,74,.14),rgba(214,168,74,.14)),var(--felt-deep)}
 .row.acts .btn{min-width:0}
 @media (max-width:480px){.row.acts:has(.btn:nth-child(4)) kbd{display:none}}
 .askrow{display:grid;grid-template-columns:56px 1fr 56px 1.4fr;gap:8px;align-items:center}
@@ -267,12 +267,67 @@ body.playing .wrap{padding-top:10px;gap:10px}
 .hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .seg.lang{min-width:0;flex:0 0 auto}
 .seg.lang button{padding:6px 10px;font-size:12px}
+
+/* ===== Escritorio / Desktop ===== */
+@media (min-width:900px){
+  .wrap{max-width:1180px;padding:28px 32px 48px;gap:20px}
+  body.playing header{display:block}
+  body.playing .wrap{padding-top:20px;gap:14px}
+  body.playing header p{display:none}
+  body.playing header h1{font-size:28px}
+  header h1{font-size:36px}
+  .tabs{max-width:720px;width:100%;margin:0 auto;position:static}
+  #p-learn.on{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  #p-learn > p.note{grid-column:1/-1}
+  #p-vals,#p-run,#p-true{max-width:680px;width:100%;margin:0 auto}
+  #p-play.on{display:grid;grid-template-columns:minmax(0,1fr) 380px;column-gap:20px;row-gap:12px;
+    grid-template-areas:"top top" "meter meter" "felt bar" "felt coach" "felt stat";grid-template-rows:auto auto auto auto 1fr;align-items:start}
+  #p-play .gtop{grid-area:top}
+  #p-play .gleft .gstat{flex:0 0 auto;min-width:160px}
+  #p-play .gleft{justify-content:flex-start}
+  #p-play .gmeter{grid-area:meter}
+  #p-play .felt2{grid-area:felt;min-height:480px;padding:16px 16px 30px;gap:10px;border-radius:28px 28px 50% 50% / 28px 28px 120px 120px}
+  #p-play .gbar{grid-area:bar;position:static;margin:0;padding:14px;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:16px}
+  #p-play .gcoach{grid-area:coach}
+  #p-play .statline{grid-area:stat;text-align:left}
+  .print{font-size:15px;letter-spacing:3px}
+  .print small{display:inline;font-size:11px}
+  .card.gcard{width:74px;height:104px;border-radius:9px}
+  .card.gcard .c{font-size:17px}
+  .card.gcard .mid{font-size:34px}
+  .gcards{min-height:104px;padding-left:32px}
+  .gcards .gcard{margin-left:-32px}
+  .ocards .card.gcard{width:54px;height:76px}
+  .ocards .card.gcard .c{font-size:12px}
+  .ocards .card.gcard .mid{font-size:24px}
+  .ocards{min-height:76px;padding-left:26px}
+  .ocards .gcard{margin-left:-26px}
+  .ozone{gap:28px}
+  .hands.many .card.gcard{width:62px;height:88px}
+  .hands.many .card.gcard .c{font-size:14px}
+  .hands.many .card.gcard .mid{font-size:28px}
+  .hands.many .gcards{min-height:88px;padding-left:28px}
+  .hands.many .gcards .gcard{margin-left:-28px}
+  .spot{width:64px;height:64px}
+  .cstack{width:46px;height:46px}
+  .disc{width:46px;height:46px;border-width:4px}
+  .spot b{font-size:15px}
+  .tot{font-size:15px;padding:3px 11px}
+  .zlabel{font-size:13px}
+  .chips3 .gchip{width:60px;height:60px}
+  .banner h3{font-size:32px}
+  .sheet{align-items:center}
+  .sheetbox{border-radius:20px;max-width:560px;max-height:86%}
+}
+@media (min-width:1200px){
+  #p-play.on{grid-template-columns:minmax(0,1fr) 400px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="hrow"><h1>Hi-Lo Trainer</h1><div class="seg sm lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="es" aria-pressed="false">ES</button></div></div>
+    <div class="hrow"><h1>Blackjack Trainer</h1><div class="seg sm lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="es" aria-pressed="false">ES</button></div></div>
     <p>Learn to count cards in blackjack, step by step: shoe and single deck.</p>
   </header>
 
@@ -448,7 +503,7 @@ body.playing .wrap{padding-top:10px;gap:10px}
   <section class="panel" id="p-play">
     <div class="gtop">
       <div class="gleft">
-        <div class="gstat"><span>Chips</span><b id="g-bank">200</b></div>
+        <div class="gstat"><span>Chips</span><b id="g-bank">10</b></div>
         <div class="gstat tc" id="g-tc"><span>True count</span><b id="g-tcv">0</b></div>
       </div>
       <button class="pill" id="g-modepill" aria-label="Change table type">Shoe</button>
@@ -490,7 +545,7 @@ body.playing .wrap{padding-top:10px;gap:10px}
       <label class="switch" for="g-show"><span>Show true count<small>Use it to check yourself. At the casino you keep it in your head.</small></span><input type="checkbox" id="g-show"></label>
       <div class="setrow lang"><span>Language</span><div class="seg sm lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="es" aria-pressed="false">ES</button></div></div>
       <button class="btn" id="g-reset">Reset chips and stats</button>
-      <p class="note" style="text-align:center">Hi-Lo Trainer · © 2026 Andres Guanipa. All rights reserved.</p>
+      <p class="note" style="text-align:center">Blackjack Trainer · © 2026 Andres Guanipa. All rights reserved.</p>
     </div>
   </div>
 
@@ -691,12 +746,13 @@ body.playing .wrap{padding-top:10px;gap:10px}
     teach:saved.teach!==false, show:!!saved.show, ask:saved.ask!==false, speed:['normal','rapida','casino'].indexOf(saved.speed)>=0?saved.speed:'normal'};
   var SPEEDS={normal:380,rapida:230,casino:130};
   var R=MODES[S.mode], SHOE=R.decks*52;
-  var g={bank:(typeof saved.bank==='number'&&saved.bank>=1)?saved.bank:200,
+  var START=10, fresh=saved.startV!==START;
+  var g={bank:(!fresh&&typeof saved.bank==='number'&&saved.bank>=1)?saved.bank:START,
     st:(saved.st&&typeof saved.st.hands==='number')?saved.st:zeroStats(),
     shoe:[],pos:0,cut:0,rc:0,seen:[],rounds:0,dealer:[],hands:[],cur:0,others:[],hole:true,
     pending:0,lastBet:0,ins:0,before:0,phase:'bet',fb:[],result:null,hint:false,shuffleMsg:'',guess:0,asked:false};
   if(typeof g.st.cntTot!=='number'){ g.st.cntOk=0; g.st.cntTot=0; }
-  function save(){ store.set({mode:S.mode,others:S.others,teach:S.teach,show:S.show,ask:S.ask,speed:S.speed,bank:g.bank,st:g.st}); }
+  function save(){ store.set({mode:S.mode,others:S.others,teach:S.teach,show:S.show,ask:S.ask,speed:S.speed,bank:g.bank,st:g.st,startV:START}); }
   var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function sleep(ms){ return new Promise(function(r){ setTimeout(r, reduceMotion?0:ms); }); }
   var D=SPEEDS[S.speed];
@@ -1032,7 +1088,7 @@ body.playing .wrap{padding-top:10px;gap:10px}
     } else if(g.phase==='shuffle'){
       b.appendChild(mk('Shuffle and continue','primary',afterShuffle,false,'Enter'));
     } else if(g.phase==='broke'){
-      b.appendChild(mk('Start over with 200','primary',function(){ g.bank=200; newShoe(); g.phase='bet'; g.fb=[]; refresh(); }));
+      b.appendChild(mk('Start over with '+START,'primary',function(){ g.bank=START; newShoe(); g.phase='bet'; g.fb=[]; refresh(); }));
     } else {
       var w=document.createElement('div'); w.className='wait'; w.textContent='Dealing…'; b.appendChild(w);
     }
@@ -1216,7 +1272,7 @@ body.playing .wrap{padding-top:10px;gap:10px}
   $('g-ask').addEventListener('change',function(){ S.ask=this.checked; if(g.phase==='ask'&&!S.ask) g.phase='bet'; else if(g.phase==='bet'&&S.ask&&!g.pending) toBetPhase(); refresh(); });
   $('g-reset').addEventListener('click',function(){
     if(!canConfigure()&&g.phase!=='done') return;
-    g.bank=200; g.st=zeroStats(); g.pending=0; g.lastBet=0; g.fb=[]; g.result=null; g.hands=[]; g.dealer=[]; g.others=[]; g.asked=false;
+    g.bank=START; g.st=zeroStats(); g.pending=0; g.lastBet=0; g.fb=[]; g.result=null; g.hands=[]; g.dealer=[]; g.others=[]; g.asked=false;
     newShoe(); g.phase='bet'; refresh(); closeSheet();
   });
 

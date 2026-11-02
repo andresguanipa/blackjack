@@ -12,7 +12,7 @@ PWAHEAD = '''<meta name="theme-color" content="#0f3d2e">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Hi-Lo">
+<meta name="apple-mobile-web-app-title" content="Blackjack">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 '''
 PWAJS = '''<script>
@@ -33,7 +33,7 @@ LOADER = '''<!DOCTYPE html>
 <meta name="author" content="Andres Guanipa">
 <meta name="copyright" content="© 2026 Andres Guanipa">
 <meta name="description" content="Hi-Lo card counting trainer for blackjack (English / Español).">
-%(head)s<title>Hi-Lo Trainer · Entrenador Hi-Lo</title>
+%(head)s<title>Blackjack Trainer · Entrenador de Blackjack</title>
 <style>html,body{margin:0;background:#0f3d2e}</style>
 </head>
 <body>
