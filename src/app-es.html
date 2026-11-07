@@ -922,7 +922,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       else if(v===10){ if(d===5&&tc>=5) dev='Par de dieces vs 5 con conteo real +5 o más: divide.'; else if(d===6&&tc>=4) dev='Par de dieces vs 6 con conteo real +4 o más: divide.'; }
       else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
       else if(v===7) p=d<=7;
-      else if(v===6) p=R.das? d<=6 : (d>=3&&d<=6);
+      else if(v===6) p=d<=6;
       else if(v===4) p=R.das&&(d===5||d===6);
       else if(v===3) p=R.das? d<=7 : (d>=4&&d<=7);
       else if(v===2) p=R.das? d<=7 : (d>=3&&d<=7);
@@ -958,7 +958,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       return {a:a,why:'Estrategia básica: '+t+' duro vs '+up+' → '+NAMES[a]+'.'};
     }
     if(t>=19) a='S';
-    else if(t===18) a=(d>=3&&d<=6)?'D':(d<=8?'S':'H');
+    else if(t===18) a=(d>=3&&d<=6)?'D':((d<=8||(SDk&&d===11))?'S':'H');
     else if(t===17) a=(d>=3&&d<=6)?'D':'H';
     else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
     else a=(d>=5&&d<=6)?'D':'H';
@@ -990,6 +990,17 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     if(tc===3) return 'El mazo está bastante cargado de cartas altas. Ventaja clara para ti.';
     return 'El mazo está lleno de cartas altas. Es el mejor momento para apostar fuerte.';
   }
+  // Plain-language reason for a basic-strategy play (no count). kind: hard|soft|pair, t: total, v: pair card value (1=A), d: upcard 2..11
+  function explainBS(kind,t,v,d,code){
+    var up=d===11?'A':d;
+    if(kind==='pair'&&v===9&&code==='S') return d===7?'Tu 18 ya le gana al 17 que lo más probable hace el crupier con un 7. No dividas: plántate.':'Contra un '+up+' el crupier es fuerte: es mejor quedarte con 18 que arriesgar dos manos que empiezan con 9.';
+    if(code==='D'||code==='Ds') return kind==='soft'?'El crupier muestra un '+up+', una carta débil, y con una mano suave no te puedes pasar con una carta. Doblar aprovecha que el crupier se pasa seguido.':'Con '+t+' contra un '+up+' tienes ventaja: si te llega un 10 o una figura quedas muy fuerte. Doblar te deja ganar el doble justo cuando más te conviene.';
+    if(kind==='soft') return code==='H'?'Tu mano es suave (el As puede valer 1), así que pedir no te puede pasar de 21. Un '+t+' suave no alcanza contra un '+up+'.':'Un '+t+' suave ya es buena mano contra un '+up+'.';
+    if(t>=17) return t+' es una mano fuerte: si pides, lo más probable es que te pases.';
+    if(t<=11){ if(t>=9&&code==='H') return (t===9&&d===2)?'Con 9 contra un 2 no conviene doblar: la ventaja es mínima. Ninguna carta te puede pasar, así que pide.':'Con '+t+' ninguna carta te puede pasar, así que pide. No dobles: contra un '+up+' el crupier es fuerte y es probable que llegue a una buena mano.'; return 'Con '+t+' ninguna carta te puede pasar. Pide siempre.'; }
+    if(code==='H'&&t===12&&(d===2||d===3)) return 'Con 12 solo te pasas si te llega un 10 o una figura (unas 4 de cada 13 cartas). Contra un '+up+' el crupier se pasa bastante menos que contra 4, 5 o 6, así que a la larga pierdes menos pidiendo que plantándote.';
+    return code==='S'?'El crupier muestra un '+up+', una carta baja: tiene que pedir y se pasa muy seguido. Deja que él corra el riesgo.':'El crupier muestra un '+up+', una carta alta: lo más probable es que llegue a 17 o más. Si te plantas con '+t+' pierdes casi seguro, así que pide aunque te puedas pasar.';
+  }
   function playReason(rec,h,d){
     var cards=h.c, o=total(cards), t=o.t, up=d===11?'A':d;
     var pair=cards.length===2&&cval(cards[0].r)===cval(cards[1].r), v=cval(cards[0].r);
@@ -997,21 +1008,17 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       if(rec.dev) return rec.why+' Con tantas cartas altas por salir, cada mano que empieza con un 10 tiene muy buenas probabilidades contra un crupier débil.';
       if(v===1) return 'Dos Ases juntos son un 12 suave débil. Separados, cada uno puede convertirse en 21 con un 10. Siempre se dividen.';
       if(v===8) return 'Un 16 es la peor mano del blackjack. Dos manos que empiezan con 8 son mucho mejores. Siempre se dividen.';
-      if(v===9) return 'Un 18 no le gana a lo que suele hacer un '+up+'. Dos manos que empiezan con 9 tienen más chance.';
-      return 'Contra un '+up+' conviene convertir esta mano en dos: cada una empieza con una carta decente y el crupier tiene alta probabilidad de pasarse.';
+      if(v===9) return d<=6? 'El crupier muestra un '+up+', una carta débil: dos manos que empiezan con 9 te hacen ganar más que un solo 18.' : 'Contra un '+up+' tu 18 apenas empata o pierde. Dos manos que empiezan con 9 tienen mejores chances.';
+      if(d<=6) return 'El crupier muestra un '+up+', una carta débil que se pasa seguido. Dividir convierte una mano mala en dos manos, y así ganas más cuando el crupier se pasa.';
+      return 'Contra un 7 tu '+(v*2)+' es una mano mala. Dividir te da dos manos que pueden llegar a 17 o más y pelearle al 17 que suele hacer el crupier.';
     }
     if(pair&&canSplit(h)){
       if(v===10) return 'Un 20 es excelente: no rompas una mano ganadora. '+(rec.a==='S'?'Plántate.':'');
       if(v===5) return 'Dos cincos son un 10, una gran mano para doblar o pedir. No se dividen.';
+      if(v===9&&rec.a==='S') return explainBS('pair',18,9,d,'S');
     }
     if(rec.dev) return rec.why+' El conteo cambia la jugada normal: '+(tcNow()>0?'quedan muchas cartas altas, así que el crupier se pasa más y tú recibes más dieces.':'quedan muchas cartas bajas, así que pedir es menos peligroso.');
-    if(rec.a==='D') return 'Con '+t+' contra un '+up+' tienes ventaja: si te llega un 10 o una figura quedas muy fuerte. Doblar te deja ganar el doble justo cuando más te conviene.';
-    if(o.soft&&rec.a==='H') return 'Tu mano es suave (el As puede valer 1), así que pedir no te puede pasar de 21. Un '+t+' suave no alcanza contra un '+up+'.';
-    if(o.soft&&rec.a==='S') return 'Un '+t+' suave ya es buena mano contra un '+up+'.';
-    if(rec.a==='S'&&t>=17) return t+' es una mano fuerte: si pides, lo más probable es que te pases.';
-    if(rec.a==='S') return 'El crupier muestra un '+up+', una carta baja: tiene que pedir y se pasa muy seguido. Deja que él corra el riesgo.';
-    if(rec.a==='H'&&t<=11) return 'Con '+t+' ninguna carta te puede pasar. Pide siempre.';
-    return 'El crupier muestra un '+up+': lo más probable es que llegue a 17 o más. Si te plantas con '+t+' pierdes casi seguro, así que pide aunque te puedas pasar.';
+    return explainBS(o.soft?'soft':'hard',t,v,d,rec.a==='D'&&o.soft?'D':rec.a);
   }
 
   function chartKey(h){
@@ -1567,7 +1574,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
   function softCode(t,d,sd){
     var a;
     if(t>=19) a='S';
-    else if(t===18) a=(d>=3&&d<=6)?'Ds':(d<=8?'S':'H');
+    else if(t===18) a=(d>=3&&d<=6)?'Ds':((d<=8||(sd&&d===11))?'S':'H');
     else if(t===17) a=(d>=3&&d<=6)?'D':'H';
     else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
     else a=(d>=5&&d<=6)?'D':'H';
@@ -1580,7 +1587,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     else if(v===10) return 'S';
     else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
     else if(v===7) p=d<=7;
-    else if(v===6) p=das? d<=6 : (d>=3&&d<=6);
+    else if(v===6) p=d<=6;
     else if(v===5) return hardCode(10,d,sd);
     else if(v===4) p=das&&(d===5||d===6);
     else if(v===3) p=das? d<=7 : (d>=4&&d<=7);
@@ -1607,19 +1614,27 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     return pairCode(row.v,d,sd);
   }
   function findRow(key){ var r=null,kind=null; ['hard','soft','pairs'].forEach(function(k){ ROWS[k].forEach(function(x){ if(x.k===key){ r=x; kind=k; } }); }); return {row:r,kind:kind}; }
+  // Plain-language reason for a basic-strategy play (no count). kind: hard|soft|pair, t: total, v: pair card value (1=A), d: upcard 2..11
+  function explainBS(kind,t,v,d,code){
+    var up=d===11?'A':d;
+    if(kind==='pair'&&v===9&&code==='S') return d===7?'Tu 18 ya le gana al 17 que lo más probable hace el crupier con un 7. No dividas: plántate.':'Contra un '+up+' el crupier es fuerte: es mejor quedarte con 18 que arriesgar dos manos que empiezan con 9.';
+    if(code==='D'||code==='Ds') return kind==='soft'?'El crupier muestra un '+up+', una carta débil, y con una mano suave no te puedes pasar con una carta. Doblar aprovecha que el crupier se pasa seguido.':'Con '+t+' contra un '+up+' tienes ventaja: si te llega un 10 o una figura quedas muy fuerte. Doblar te deja ganar el doble justo cuando más te conviene.';
+    if(kind==='soft') return code==='H'?'Tu mano es suave (el As puede valer 1), así que pedir no te puede pasar de 21. Un '+t+' suave no alcanza contra un '+up+'.':'Un '+t+' suave ya es buena mano contra un '+up+'.';
+    if(t>=17) return t+' es una mano fuerte: si pides, lo más probable es que te pases.';
+    if(t<=11){ if(t>=9&&code==='H') return (t===9&&d===2)?'Con 9 contra un 2 no conviene doblar: la ventaja es mínima. Ninguna carta te puede pasar, así que pide.':'Con '+t+' ninguna carta te puede pasar, así que pide. No dobles: contra un '+up+' el crupier es fuerte y es probable que llegue a una buena mano.'; return 'Con '+t+' ninguna carta te puede pasar. Pide siempre.'; }
+    if(code==='H'&&t===12&&(d===2||d===3)) return 'Con 12 solo te pasas si te llega un 10 o una figura (unas 4 de cada 13 cartas). Contra un '+up+' el crupier se pasa bastante menos que contra 4, 5 o 6, así que a la larga pierdes menos pidiendo que plantándote.';
+    return code==='S'?'El crupier muestra un '+up+', una carta baja: tiene que pedir y se pasa muy seguido. Deja que él corra el riesgo.':'El crupier muestra un '+up+', una carta alta: lo más probable es que llegue a 17 o más. Si te plantas con '+t+' pierdes casi seguro, así que pide aunque te puedas pasar.';
+  }
   function reasonFor(kind,row,d,c){
     var W=T.why;
     if(kind==='pairs'){
       if(row.v===1) return W.aces; if(row.v===8) return W.eights; if(row.v===10) return W.tens; if(row.v===5) return W.fives;
       if(c==='P') return W.split;
-      return reasonFor('hard',{t:row.v*2},d,c);
+      return explainBS('pair',row.v*2,row.v,d,c);
     }
-    if(kind==='soft'){ if(c==='D'||c==='Ds') return W.dbl; return c==='H'?W.softH:W.softS; }
-    if(c==='D'||c==='Ds') return W.dbl;
-    if(row.t>=17) return W.H17;
-    if(row.t<=11) return W.low;
-    return d<=6&&c==='S'?W.stiffLow:W.stiffHigh;
+    return explainBS(kind,row.t,0,d,c);
   }
+
   function handText(kind,row){
     if(kind==='pairs') return T.pairOf+' '+row.l.split(',')[0]+(row.v===1?'':'');
     if(kind==='soft') return row.l+' ('+(LANG==='es'?row.t+' '+T.softW:T.softW+' '+row.t)+')';

@@ -1,5 +1,5 @@
 // Service worker: guarda la app para que funcione sin internet.
-const CACHE = 'hilo-v18';
+const CACHE = 'hilo-v19';
 const SHELL = [
   './',
   './index.html',

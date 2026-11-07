@@ -922,7 +922,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       else if(v===10){ if(d===5&&tc>=5) dev='Pair of tens vs 5 at true count +5 or more: split.'; else if(d===6&&tc>=4) dev='Pair of tens vs 6 at true count +4 or more: split.'; }
       else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
       else if(v===7) p=d<=7;
-      else if(v===6) p=R.das? d<=6 : (d>=3&&d<=6);
+      else if(v===6) p=d<=6;
       else if(v===4) p=R.das&&(d===5||d===6);
       else if(v===3) p=R.das? d<=7 : (d>=4&&d<=7);
       else if(v===2) p=R.das? d<=7 : (d>=3&&d<=7);
@@ -958,7 +958,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       return {a:a,why:'Basic strategy: hard '+t+' vs '+up+' → '+NAMES[a]+'.'};
     }
     if(t>=19) a='S';
-    else if(t===18) a=(d>=3&&d<=6)?'D':(d<=8?'S':'H');
+    else if(t===18) a=(d>=3&&d<=6)?'D':((d<=8||(SDk&&d===11))?'S':'H');
     else if(t===17) a=(d>=3&&d<=6)?'D':'H';
     else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
     else a=(d>=5&&d<=6)?'D':'H';
@@ -990,6 +990,17 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     if(tc===3) return 'The deck is fairly rich in high cards. A clear edge for you.';
     return 'The deck is loaded with high cards. This is the best time to bet big.';
   }
+  // Plain-language reason for a basic-strategy play (no count). kind: hard|soft|pair, t: total, v: pair card value (1=A), d: upcard 2..11
+  function explainBS(kind,t,v,d,code){
+    var up=d===11?'A':d;
+    if(kind==='pair'&&v===9&&code==='S') return d===7?'Your 18 already beats the 17 the dealer most likely makes with a 7. Don’t split: stand.':'Against a '+up+' the dealer is strong: keeping 18 beats risking two hands that start with a 9.';
+    if(code==='D'||code==='Ds') return kind==='soft'?'The dealer shows a '+up+', a weak card, and a soft hand can’t bust with one card. Doubling takes advantage of how often the dealer busts.':'With '+t+' against a '+up+' you have the edge: a 10 or a face card leaves you very strong. Doubling lets you win twice as much right when it suits you most.';
+    if(kind==='soft') return code==='H'?'Your hand is soft (the Ace can count as 1), so hitting can’t take you over 21. A soft '+t+' isn’t enough against a '+up+'.':'A soft '+t+' is already a good hand against a '+up+'.';
+    if(t>=17) return t+' is a strong hand: if you hit, you’ll most likely bust.';
+    if(t<=11){ if(t>=9&&code==='H') return (t===9&&d===2)?'With 9 against a 2, doubling isn’t worth it: the edge is tiny. No card can bust you, so just hit.':'With '+t+' no card can bust you, so hit. Don’t double: against a '+up+' the dealer is strong and likely to make a good hand.'; return 'With '+t+' no card can bust you. Always hit.'; }
+    if(code==='H'&&t===12&&(d===2||d===3)) return 'With 12 you only bust on a 10 or a face card (about 4 in 13 cards). Against a '+up+' the dealer busts much less than against 4, 5 or 6, so in the long run you lose less by hitting than by standing.';
+    return code==='S'?'The dealer shows a '+up+', a low card: they have to hit and bust very often. Let them take the risk.':'The dealer shows a '+up+', a high card: they will most likely reach 17 or more. Standing on '+t+' almost surely loses, so hit even though you might bust.';
+  }
   function playReason(rec,h,d){
     var cards=h.c, o=total(cards), t=o.t, up=d===11?'A':d;
     var pair=cards.length===2&&cval(cards[0].r)===cval(cards[1].r), v=cval(cards[0].r);
@@ -997,21 +1008,17 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
       if(rec.dev) return rec.why+' With so many high cards still to come, each hand starting with a 10 has great odds against a weak dealer.';
       if(v===1) return 'Two Aces together are a weak soft 12. Split, each one can become 21 with a 10. Always split them.';
       if(v===8) return '16 is the worst hand in blackjack. Two hands starting with an 8 are much better. Always split them.';
-      if(v===9) return '18 doesn’t beat what a '+up+' usually makes. Two hands starting with a 9 have a better chance.';
-      return 'Against a '+up+' it pays to turn this hand into two: each starts with a decent card and the dealer is likely to bust.';
+      if(v===9) return d<=6? 'The dealer shows a '+up+', a weak card: two hands starting with a 9 win you more than a single 18.' : 'Against a '+up+' your 18 barely pushes or loses. Two hands starting with a 9 have better chances.';
+      if(d<=6) return 'The dealer shows a '+up+', a weak card that busts often. Splitting turns a bad hand into two, so you win more when the dealer busts.';
+      return 'Against a 7 your '+(v*2)+' is a bad hand. Splitting gives you two hands that can reach 17 or more and fight the 17 the dealer usually makes.';
     }
     if(pair&&canSplit(h)){
       if(v===10) return '20 is excellent: don’t break up a winning hand. '+(rec.a==='S'?'Stand.':'');
       if(v===5) return 'Two fives make 10, a great hand to double or hit. Never split them.';
+      if(v===9&&rec.a==='S') return explainBS('pair',18,9,d,'S');
     }
     if(rec.dev) return rec.why+' The count changes the usual play: '+(tcNow()>0?'lots of high cards are left, so the dealer busts more and you get more tens.':'lots of low cards are left, so hitting is less dangerous.');
-    if(rec.a==='D') return 'With '+t+' against a '+up+' you have the edge: a 10 or a face card leaves you very strong. Doubling lets you win twice as much right when it suits you most.';
-    if(o.soft&&rec.a==='H') return 'Your hand is soft (the Ace can count as 1), so hitting can’t take you over 21. A soft '+t+' isn’t enough against a '+up+'.';
-    if(o.soft&&rec.a==='S') return 'A soft '+t+' is already a good hand against a '+up+'.';
-    if(rec.a==='S'&&t>=17) return t+' is a strong hand: if you hit, you’ll most likely bust.';
-    if(rec.a==='S') return 'The dealer shows a '+up+', a low card: they have to hit and bust very often. Let them take the risk.';
-    if(rec.a==='H'&&t<=11) return 'With '+t+' no card can bust you. Always hit.';
-    return 'The dealer shows a '+up+': they will most likely reach 17 or more. Standing on '+t+' almost surely loses, so hit even though you might bust.';
+    return explainBS(o.soft?'soft':'hard',t,v,d,rec.a==='D'&&o.soft?'D':rec.a);
   }
 
   function chartKey(h){
@@ -1567,7 +1574,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
   function softCode(t,d,sd){
     var a;
     if(t>=19) a='S';
-    else if(t===18) a=(d>=3&&d<=6)?'Ds':(d<=8?'S':'H');
+    else if(t===18) a=(d>=3&&d<=6)?'Ds':((d<=8||(sd&&d===11))?'S':'H');
     else if(t===17) a=(d>=3&&d<=6)?'D':'H';
     else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
     else a=(d>=5&&d<=6)?'D':'H';
@@ -1580,7 +1587,7 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     else if(v===10) return 'S';
     else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
     else if(v===7) p=d<=7;
-    else if(v===6) p=das? d<=6 : (d>=3&&d<=6);
+    else if(v===6) p=d<=6;
     else if(v===5) return hardCode(10,d,sd);
     else if(v===4) p=das&&(d===5||d===6);
     else if(v===3) p=das? d<=7 : (d>=4&&d<=7);
@@ -1607,19 +1614,27 @@ ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
     return pairCode(row.v,d,sd);
   }
   function findRow(key){ var r=null,kind=null; ['hard','soft','pairs'].forEach(function(k){ ROWS[k].forEach(function(x){ if(x.k===key){ r=x; kind=k; } }); }); return {row:r,kind:kind}; }
+  // Plain-language reason for a basic-strategy play (no count). kind: hard|soft|pair, t: total, v: pair card value (1=A), d: upcard 2..11
+  function explainBS(kind,t,v,d,code){
+    var up=d===11?'A':d;
+    if(kind==='pair'&&v===9&&code==='S') return d===7?'Your 18 already beats the 17 the dealer most likely makes with a 7. Don’t split: stand.':'Against a '+up+' the dealer is strong: keeping 18 beats risking two hands that start with a 9.';
+    if(code==='D'||code==='Ds') return kind==='soft'?'The dealer shows a '+up+', a weak card, and a soft hand can’t bust with one card. Doubling takes advantage of how often the dealer busts.':'With '+t+' against a '+up+' you have the edge: a 10 or a face card leaves you very strong. Doubling lets you win twice as much right when it suits you most.';
+    if(kind==='soft') return code==='H'?'Your hand is soft (the Ace can count as 1), so hitting can’t take you over 21. A soft '+t+' isn’t enough against a '+up+'.':'A soft '+t+' is already a good hand against a '+up+'.';
+    if(t>=17) return t+' is a strong hand: if you hit, you’ll most likely bust.';
+    if(t<=11){ if(t>=9&&code==='H') return (t===9&&d===2)?'With 9 against a 2, doubling isn’t worth it: the edge is tiny. No card can bust you, so just hit.':'With '+t+' no card can bust you, so hit. Don’t double: against a '+up+' the dealer is strong and likely to make a good hand.'; return 'With '+t+' no card can bust you. Always hit.'; }
+    if(code==='H'&&t===12&&(d===2||d===3)) return 'With 12 you only bust on a 10 or a face card (about 4 in 13 cards). Against a '+up+' the dealer busts much less than against 4, 5 or 6, so in the long run you lose less by hitting than by standing.';
+    return code==='S'?'The dealer shows a '+up+', a low card: they have to hit and bust very often. Let them take the risk.':'The dealer shows a '+up+', a high card: they will most likely reach 17 or more. Standing on '+t+' almost surely loses, so hit even though you might bust.';
+  }
   function reasonFor(kind,row,d,c){
     var W=T.why;
     if(kind==='pairs'){
       if(row.v===1) return W.aces; if(row.v===8) return W.eights; if(row.v===10) return W.tens; if(row.v===5) return W.fives;
       if(c==='P') return W.split;
-      return reasonFor('hard',{t:row.v*2},d,c);
+      return explainBS('pair',row.v*2,row.v,d,c);
     }
-    if(kind==='soft'){ if(c==='D'||c==='Ds') return W.dbl; return c==='H'?W.softH:W.softS; }
-    if(c==='D'||c==='Ds') return W.dbl;
-    if(row.t>=17) return W.H17;
-    if(row.t<=11) return W.low;
-    return d<=6&&c==='S'?W.stiffLow:W.stiffHigh;
+    return explainBS(kind,row.t,0,d,c);
   }
+
   function handText(kind,row){
     if(kind==='pairs') return T.pairOf+' '+row.l.split(',')[0]+(row.v===1?'':'');
     if(kind==='soft') return row.l+' ('+(LANG==='es'?row.t+' '+T.softW:T.softW+' '+row.t)+')';
