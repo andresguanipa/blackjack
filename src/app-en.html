@@ -102,7 +102,7 @@ select{background:var(--felt-deep);color:var(--ink);border:1px solid var(--line)
 .grid-tc .btn{padding:12px 4px;font-family:var(--mono);font-size:18px}
 
 /* Jugar */
-.tabs{grid-template-columns:repeat(5,1fr)}
+.tabs{grid-template-columns:repeat(6,1fr)}
 #p-play{gap:12px}
 .gtop{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:stretch}
 .gstat{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
@@ -388,6 +388,48 @@ body{min-height:100vh}
 @keyframes bannerIn2{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.gresult{animation:none}}
 @media (min-width:1400px){.gresult h3{font-size:30px}.gresult p{font-size:16px}}
+
+/* ===== Tabla / Chart ===== */
+.tabs{grid-template-columns:repeat(6,1fr)}
+@media (max-width:480px){.tabs button{font-size:12px;padding:10px 2px}}
+#p-chart > div{display:flex;flex-direction:column;gap:16px}
+.ctable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.charts{display:flex;flex-direction:column;gap:18px}
+.ctable{border-collapse:separate;border-spacing:2px;width:100%;min-width:330px;font-variant-numeric:tabular-nums}
+.ctable caption{text-align:left;font:600 13px var(--body);color:var(--brass);letter-spacing:.5px;text-transform:uppercase;padding:0 0 6px}
+.ctable th{font:600 12px var(--mono);color:var(--muted);padding:4px 2px;text-align:center;border:0}
+.ctable thead th{color:var(--ink)}
+.ctable th.corner{font:500 10px var(--body);text-align:left}
+.ctable tbody th{text-align:left;white-space:nowrap;padding-right:6px;color:var(--ink)}
+.ctable td{padding:0;border:0}
+.cc{display:inline-flex;align-items:center;justify-content:center;font:700 12px var(--mono);border-radius:5px;color:#fff;min-width:26px;height:28px;position:relative;cursor:pointer;font-style:normal}
+td.cc{display:table-cell;text-align:center;vertical-align:middle;width:9%}
+.cc.cH{background:#a5423b}
+.cc.cS{background:#d6a84a;color:#1d1606}
+.cc.cD{background:#2f8a55}
+.cc.cDs{background:repeating-linear-gradient(135deg,#2f8a55 0 6px,#287a4b 6px 12px)}
+.cc.cP{background:#3b6fb3}
+td.cc.dev::after{content:'';position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+td.cc:focus-visible{outline:2px solid #fff;outline-offset:1px}
+td.cc.hl{outline:3px solid #fff;outline-offset:0;box-shadow:0 0 0 5px rgba(214,168,74,.6);z-index:1}
+tr.hlr th{color:var(--brass)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px}
+.lg{display:flex;align-items:center;gap:6px}
+.lg .cc{min-width:30px;height:24px;cursor:default}
+.cdetail:empty{display:none}
+.cdetail .ch .cc{min-width:34px;height:26px;margin-right:6px;vertical-align:middle;cursor:default}
+ul.mem{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.pq{font-size:16px}
+.pbtns .btn.rec{box-shadow:0 0 0 2px var(--good);border-color:var(--good)}
+.bust{display:flex;flex-direction:column;gap:6px}
+.bb{display:grid;grid-template-columns:28px 1fr 56px;align-items:center;gap:8px;font-size:13px}
+.bl{font:600 14px var(--mono);text-align:center}
+.bt{height:10px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden}
+.bt i{display:block;height:100%;background:var(--muted);border-radius:6px}
+.bt i.weak{background:var(--good)}
+.bv{font:500 13px var(--mono);text-align:right}
+.chartlink{appearance:none;align-self:flex-start;margin-top:4px;background:transparent;border:1px solid rgba(214,168,74,.5);color:var(--brass);border-radius:8px;padding:6px 10px;font:600 13px var(--body);cursor:pointer}
+@media (min-width:900px){ #p-chart{max-width:900px;width:100%;margin:0 auto} .cc{height:32px;font-size:13px} }
 </style>
 </head>
 <body>
@@ -402,6 +444,7 @@ body{min-height:100vh}
     <button role="tab" id="t-vals" aria-selected="false" data-p="vals">Values</button>
     <button role="tab" id="t-run" aria-selected="false" data-p="run">Count</button>
     <button role="tab" id="t-true" aria-selected="false" data-p="true">True</button>
+    <button role="tab" id="t-chart" aria-selected="false" data-p="chart">Chart</button>
     <button role="tab" id="t-play" aria-selected="false" data-p="play">Play</button>
   </nav>
 
@@ -466,7 +509,7 @@ body{min-height:100vh}
     <div class="box">
       <h3>Suggested order</h3>
       <ol>
-        <li>Master basic strategy with no mistakes.</li>
+        <li>Master basic strategy with no mistakes (<b>Chart</b> tab).</li>
         <li>Practice the card values until they’re automatic.</li>
         <li>Count down a full deck: it should end at 0. Goal: under 25 seconds.</li>
         <li>Practice the true count and the bet.</li>
@@ -564,6 +607,9 @@ body{min-height:100vh}
     <div class="feedback" id="t-fb" aria-live="polite"></div>
     <button class="btn primary" id="t-next" style="display:none">Next</button>
   </section>
+
+  <!-- TABLA / CHART -->
+  <section class="panel" id="p-chart"><div id="chart-root"></div></section>
 
   <!-- PLAY -->
   <section class="panel" id="p-play">
@@ -968,6 +1014,18 @@ body{min-height:100vh}
     return 'The dealer shows a '+up+': they will most likely reach 17 or more. Standing on '+t+' almost surely loses, so hit even though you might bust.';
   }
 
+  function chartKey(h){
+    var c=h.c, o=total(c);
+    if(c.length===2&&cval(c[0].r)===cval(c[1].r)&&canSplit(h)){ var v=cval(c[0].r); return v===1?'pA':'p'+v; }
+    if(o.soft){ if(o.t>=13&&o.t<=20) return 's'+o.t; return null; }
+    if(o.t<=8) return 'h8'; if(o.t>=17) return 'h17'; return 'h'+o.t;
+  }
+  function chartBtn(h){
+    var k=chartKey(h); if(!k||typeof window.__openChart!=='function') return '';
+    return '<button class="chartlink" data-k="'+k+'" data-u="'+upVal()+'">'+(window.__chartLabel||'See it in the chart')+' →</button>';
+  }
+  $('g-coach').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.chartlink'); if(b&&window.__openChart) window.__openChart(S.mode,b.dataset.k,+b.dataset.u); });
+
   /* --- Render --- */
   function mk(label,cls,fn,dis,key){
     var b=document.createElement('button'); b.className='btn '+(cls||''); b.textContent=label;
@@ -1088,7 +1146,7 @@ body{min-height:100vh}
         var h=cur(), rec=recFor(h), tt=total(h.c);
         var note=(!R.dblAny&&h.c.length===2&&!canDouble(h)&&strategy(h.c,upVal(),tcNow(),true,false).a==='D'&&rec.a!=='P')?' Doubling would be best here, but this table only allows doubling on 9, 10 or 11'+(h.split?' and not after splitting':'')+'.':'';
         var pre=g.hands.length>1?'Hand '+(g.cur+1)+' of '+g.hands.length+': ':'';
-        html='<div class="ch">'+NAMES[rec.a]+'</div><p>'+pre+'You have '+(tt.soft?'soft '+tt.t:tt.t)+' against a '+upName()+'. True count '+sign(tcNow())+'. '+esc(playReason(rec,h,upVal()))+note+'</p>';
+        html='<div class="ch">'+NAMES[rec.a]+'</div><p>'+pre+'You have '+(tt.soft?'soft '+tt.t:tt.t)+' against a '+upName()+'. True count '+sign(tcNow())+'. '+esc(playReason(rec,h,upVal()))+note+'</p>'+chartBtn(h);
       } else if(g.phase==='done'){
         html='<div class="ch">True count now: '+sign(tcNow())+'</div><p>With the cards that just came out, this is the number for your next bet.'+(R.decks===1&&needShuffle()?' Enough cards have come out: the dealer will reshuffle.':'')+'</p>';
       } else if(g.phase==='shuffle'){
@@ -1387,6 +1445,270 @@ body{min-height:100vh}
     document.querySelectorAll('.lang button').forEach(function(b){ b.addEventListener('click',function(){ if(b.getAttribute('aria-pressed')!=='true'&&ok) window.__hiloSetLang(b.dataset.l); }); });
   })();
   newShoe(); toBetPhase(); refresh(); syncPlaying();
+})();
+</script>
+<script>
+(function(){
+  var LANG='en';
+  var T={
+    es:{
+      title:'Tabla de estrategia básica',
+      intro:'No es una tabla de suerte. Para cada mano tuya contra cada carta visible del crupier, dice la jugada que más gana (o menos pierde) a largo plazo. Se calculó simulando millones de manos. Si la sigues siempre, la ventaja de la casa baja a alrededor de 0,5%.',
+      howT:'Cómo leerla en 3 pasos',
+      how:['<b>¿Tus dos cartas son un par?</b> (dos 8, dos Ases…) Busca tu fila en <b>Pares</b>.',
+           '<b>¿Tienes un As que puede contar 11 sin pasarte?</b> (A-6 = 7 o 17) Busca en <b>Suaves</b>.',
+           '<b>Si no,</b> suma tus cartas y busca en <b>Duras</b>. La <b>columna</b> es la carta visible del crupier. Donde se cruzan está tu jugada.'],
+      ex:'Ejemplo: tienes 10 + 6 = 16 y el crupier muestra un 9. Fila "16" en Duras, columna "9": <b>P</b> = Pedir.',
+      shoe:'Shoe · 6 mazos', single:'Single deck',
+      rulesShoe:'Reglas del shoe de la app: puedes doblar con cualquier par de cartas y después de dividir.',
+      rulesSingle:'Reglas de tu mesa single deck: solo doblas con 9, 10 u 11 y no después de dividir. Por eso no hay dobles con manos suaves.',
+      hard:'Duras', soft:'Suaves', pairs:'Pares', you:'Tú', dealer:'Carta del crupier',
+      legend:{H:'Pedir',S:'Plantarse',D:'Doblar (si no se puede, pedir)',Ds:'Doblar (si no se puede, plantarse)',P:'Dividir'},
+      code:{H:'P',S:'Pl',D:'D',Ds:'D*',P:'Dv'},
+      dot:'• = el conteo puede cambiar esta jugada. Toca la celda.',
+      tap:'Toca cualquier celda para ver la explicación.',
+      memT:'Reglas para memorizar',
+      mem:['Siempre divide <b>Ases</b> y <b>ochos</b>. Nunca dividas <b>dieces</b> ni <b>cincos</b>.',
+           'Con <b>17 o más</b> duro, plántate siempre. Con <b>8 o menos</b>, pide siempre.',
+           'Con <b>13 a 16</b>: plántate si el crupier muestra <b>2 a 6</b>; pide si muestra <b>7 a As</b>.',
+           'Con <b>12</b>: plántate solo contra <b>4, 5 y 6</b>.',
+           'Dobla <b>11</b> contra casi todo y <b>10</b> contra 2 a 9.',
+           'El crupier con <b>4, 5 o 6</b> es débil: se pasa más de 40% de las veces. Con <b>7 a As</b> es fuerte.'],
+      pracT:'Practica la tabla', pracQ:'¿Qué haces?',
+      hand:'Tienes', vs:'contra', pairOf:'par de', softW:'suave', hardW:'duro',
+      ok:'¡Correcto!', no:'No. La tabla dice',
+      streak:'Racha', score:'Aciertos', next:'Otra mano',
+      act:{H:'Pedir',S:'Plantarse',D:'Doblar',P:'Dividir'},
+      bustT:'Probabilidad de que el crupier se pase',
+      bustN:'Aproximado para 6 mazos, crupier se planta en 17 suave. Por eso con una mano débil (12 a 16) te plantas contra 2–6: el crupier se pasa mucho. Contra 7 a As casi nunca se pasa, así que necesitas mejorar tu mano.',
+      det:{H:'Pide carta.',S:'Plántate.',D:'Dobla tu apuesta y recibe una sola carta. Si no se puede doblar, pide.',Ds:'Dobla tu apuesta. Si no se puede doblar, plántate.',P:'Divide el par en dos manos.'},
+      devT:'Con el conteo:', devGE:'si el conteo real es', devOrMore:'o más', devOrLess:'o menos', devNeg:'negativo',
+      vsDealer:'contra', dealerShows:'el crupier muestra',
+      why:{
+        H17:'Con 17 o más, pedir te pasaría casi siempre.',
+        stiffLow:'El crupier tiene carta baja y se pasa muy seguido: no arriesgues pasarte tú.',
+        stiffHigh:'El crupier tiene carta alta y casi seguro llega a 17 o más: necesitas mejorar.',
+        low:'Ninguna carta te puede pasar: pide.',
+        dbl:'Tienes ventaja en esta mano: un 10 te deja muy fuerte. Doblar te paga el doble.',
+        softH:'Con mano suave no te puedes pasar al pedir, y esta mano todavía no alcanza.',
+        softS:'Ya es buena mano suave contra esta carta.',
+        split:'Dos manos empezando con estas cartas ganan más que jugarlas juntas.',
+        aces:'Dos Ases juntos son un 12 débil; separados, cada uno puede hacer 21.',
+        eights:'16 es la peor mano; dos manos que empiezan con 8 son mucho mejores.',
+        tens:'20 es excelente: no rompas una mano ganadora.',
+        fives:'Dos cincos son un 10: mejor doblar o pedir que dividir.'
+      },
+      openChart:'Ver en la tabla'
+    },
+    en:{
+      title:'Basic strategy chart',
+      intro:'It isn’t a luck chart. For each of your hands against each dealer upcard, it shows the play that wins the most (or loses the least) in the long run. It was worked out by simulating millions of hands. If you always follow it, the house edge drops to about 0.5%.',
+      howT:'How to read it in 3 steps',
+      how:['<b>Are your two cards a pair?</b> (two 8s, two Aces…) Find your row under <b>Pairs</b>.',
+           '<b>Do you have an Ace that can count as 11 without busting?</b> (A-6 = 7 or 17) Look under <b>Soft</b>.',
+           '<b>Otherwise,</b> add up your cards and look under <b>Hard</b>. The <b>column</b> is the dealer’s upcard. Where they meet is your play.'],
+      ex:'Example: you have 10 + 6 = 16 and the dealer shows a 9. Row "16" under Hard, column "9": <b>H</b> = Hit.',
+      shoe:'Shoe · 6 decks', single:'Single deck',
+      rulesShoe:'The app’s shoe rules: double on any two cards and after splitting.',
+      rulesSingle:'Your single-deck table rules: double on 9, 10 or 11 only, not after splitting. That’s why there are no soft doubles.',
+      hard:'Hard', soft:'Soft', pairs:'Pairs', you:'You', dealer:'Dealer upcard',
+      legend:{H:'Hit',S:'Stand',D:'Double (if not allowed, hit)',Ds:'Double (if not allowed, stand)',P:'Split'},
+      code:{H:'H',S:'S',D:'D',Ds:'D*',P:'SP'},
+      dot:'• = the count can change this play. Tap the cell.',
+      tap:'Tap any cell to see the explanation.',
+      memT:'Rules to memorize',
+      mem:['Always split <b>Aces</b> and <b>eights</b>. Never split <b>tens</b> or <b>fives</b>.',
+           'With hard <b>17 or more</b>, always stand. With <b>8 or less</b>, always hit.',
+           'With <b>13 to 16</b>: stand if the dealer shows <b>2 to 6</b>; hit if they show <b>7 to Ace</b>.',
+           'With <b>12</b>: stand only against <b>4, 5 and 6</b>.',
+           'Double <b>11</b> against almost everything and <b>10</b> against 2 to 9.',
+           'A dealer showing <b>4, 5 or 6</b> is weak: they bust over 40% of the time. <b>7 to Ace</b> is strong.'],
+      pracT:'Practice the chart', pracQ:'What do you do?',
+      hand:'You have', vs:'against', pairOf:'pair of', softW:'soft', hardW:'hard',
+      ok:'Correct!', no:'No. The chart says',
+      streak:'Streak', score:'Correct', next:'Another hand',
+      act:{H:'Hit',S:'Stand',D:'Double',P:'Split'},
+      bustT:'Chance the dealer busts',
+      bustN:'Approximate for 6 decks, dealer stands on soft 17. That’s why with a weak hand (12 to 16) you stand against 2–6: the dealer busts a lot. Against 7 to Ace they rarely bust, so you need to improve your hand.',
+      det:{H:'Take a card.',S:'Stand.',D:'Double your bet and take exactly one card. If doubling isn’t allowed, hit.',Ds:'Double your bet. If doubling isn’t allowed, stand.',P:'Split the pair into two hands.'},
+      devT:'With the count:', devGE:'if the true count is', devOrMore:'or more', devOrLess:'or less', devNeg:'negative',
+      vsDealer:'against', dealerShows:'the dealer shows',
+      why:{
+        H17:'With 17 or more, hitting would bust you almost every time.',
+        stiffLow:'The dealer has a low card and busts very often: don’t risk busting yourself.',
+        stiffHigh:'The dealer has a high card and will most likely reach 17 or more: you need to improve.',
+        low:'No card can bust you: hit.',
+        dbl:'You have the edge in this hand: a 10 leaves you very strong. Doubling pays twice as much.',
+        softH:'A soft hand can’t bust when you hit, and this one isn’t good enough yet.',
+        softS:'This is already a good soft hand against this card.',
+        split:'Two hands starting with these cards win more than playing them together.',
+        aces:'Two Aces together are a weak 12; split, each one can make 21.',
+        eights:'16 is the worst hand; two hands starting with an 8 are much better.',
+        tens:'20 is excellent: don’t break up a winning hand.',
+        fives:'Two fives make 10: better to double or hit than to split.'
+      },
+      openChart:'See it in the chart'
+    }
+  }[LANG];
+
+  var UPS=[2,3,4,5,6,7,8,9,10,11];
+  function upName(u){ return u===11?'A':String(u); }
+  var mode='shoe';
+  // Basic strategy, same rules as the table in the Play tab.
+  function hardCode(t,d,sd){
+    if(t>=17) return 'S';
+    if(t>=13) return d<=6?'S':'H';
+    if(t===12) return (d>=4&&d<=6)?'S':'H';
+    if(t===11) return (d<=10||sd)?'D':'H';
+    if(t===10) return d<=9?'D':'H';
+    if(t===9) return ((d>=3&&d<=6)||(sd&&d===2))?'D':'H';
+    return 'H';
+  }
+  function softCode(t,d,sd){
+    var a;
+    if(t>=19) a='S';
+    else if(t===18) a=(d>=3&&d<=6)?'Ds':(d<=8?'S':'H');
+    else if(t===17) a=(d>=3&&d<=6)?'D':'H';
+    else if(t>=15) a=(d>=4&&d<=6)?'D':'H';
+    else a=(d>=5&&d<=6)?'D':'H';
+    if(sd){ if(a==='Ds') a='S'; if(a==='D') a='H'; }
+    return a;
+  }
+  function pairCode(v,d,sd){
+    var das=!sd, p=false;
+    if(v===1||v===8) p=true;
+    else if(v===10) return 'S';
+    else if(v===9) p=(d>=2&&d<=6)||d===8||d===9;
+    else if(v===7) p=d<=7;
+    else if(v===6) p=das? d<=6 : (d>=3&&d<=6);
+    else if(v===5) return hardCode(10,d,sd);
+    else if(v===4) p=das&&(d===5||d===6);
+    else if(v===3) p=das? d<=7 : (d>=4&&d<=7);
+    else if(v===2) p=das? d<=7 : (d>=3&&d<=7);
+    if(p) return 'P';
+    return hardCode(v*2,d,sd);
+  }
+  // Count deviations (key: row-upcard)
+  function devs(sd){
+    var m={'h16-10':['S',0,'ge'],'h16-9':['S',5,'ge'],'h15-10':['S',4,'ge'],'h12-2':['S',3,'ge'],'h12-3':['S',2,'ge'],'h12-4':['H',0,'neg'],'h12-5':['H',-3,'le'],'h12-6':['H',-2,'le'],'h13-2':['H',-2,'le'],'h13-3':['H',-3,'le'],
+      'h10-10':['D',4,'ge'],'h10-11':['D',4,'ge'],'h9-7':['D',3,'ge'],'p10-5':['P',5,'ge'],'p10-6':['P',4,'ge']};
+    if(!sd){ m['h11-11']=['D',1,'ge']; m['h9-2']=['D',1,'ge']; }
+    return m;
+  }
+  var ROWS={
+    hard:[{k:'h8',l:'5–8',t:8},{k:'h9',l:'9',t:9},{k:'h10',l:'10',t:10},{k:'h11',l:'11',t:11},{k:'h12',l:'12',t:12},{k:'h13',l:'13',t:13},{k:'h14',l:'14',t:14},{k:'h15',l:'15',t:15},{k:'h16',l:'16',t:16},{k:'h17',l:'17+',t:17}],
+    soft:[{k:'s13',l:'A,2',t:13},{k:'s14',l:'A,3',t:14},{k:'s15',l:'A,4',t:15},{k:'s16',l:'A,5',t:16},{k:'s17',l:'A,6',t:17},{k:'s18',l:'A,7',t:18},{k:'s19',l:'A,8',t:19},{k:'s20',l:'A,9',t:20}],
+    pairs:[{k:'p2',l:'2,2',v:2},{k:'p3',l:'3,3',v:3},{k:'p4',l:'4,4',v:4},{k:'p5',l:'5,5',v:5},{k:'p6',l:'6,6',v:6},{k:'p7',l:'7,7',v:7},{k:'p8',l:'8,8',v:8},{k:'p9',l:'9,9',v:9},{k:'p10',l:'10,10',v:10},{k:'pA',l:'A,A',v:1}]
+  };
+  function codeFor(kind,row,d){
+    var sd=mode==='single';
+    if(kind==='hard') return hardCode(row.t,d,sd);
+    if(kind==='soft') return softCode(row.t,d,sd);
+    return pairCode(row.v,d,sd);
+  }
+  function findRow(key){ var r=null,kind=null; ['hard','soft','pairs'].forEach(function(k){ ROWS[k].forEach(function(x){ if(x.k===key){ r=x; kind=k; } }); }); return {row:r,kind:kind}; }
+  function reasonFor(kind,row,d,c){
+    var W=T.why;
+    if(kind==='pairs'){
+      if(row.v===1) return W.aces; if(row.v===8) return W.eights; if(row.v===10) return W.tens; if(row.v===5) return W.fives;
+      if(c==='P') return W.split;
+      return reasonFor('hard',{t:row.v*2},d,c);
+    }
+    if(kind==='soft'){ if(c==='D'||c==='Ds') return W.dbl; return c==='H'?W.softH:W.softS; }
+    if(c==='D'||c==='Ds') return W.dbl;
+    if(row.t>=17) return W.H17;
+    if(row.t<=11) return W.low;
+    return d<=6&&c==='S'?W.stiffLow:W.stiffHigh;
+  }
+  function handText(kind,row){
+    if(kind==='pairs') return T.pairOf+' '+row.l.split(',')[0]+(row.v===1?'':'');
+    if(kind==='soft') return row.l+' ('+(LANG==='es'?row.t+' '+T.softW:T.softW+' '+row.t)+')';
+    return (LANG==='es'?row.l+' '+T.hardW:T.hardW+' '+row.l);
+  }
+  function devText(dv){
+    var n=dv[1], cond=dv[2]==='ge'?(T.devGE+' '+(n>0?'+':'')+n+' '+T.devOrMore):dv[2]==='neg'?(T.devGE+' '+T.devNeg):(T.devGE+' '+(n>0?'+':'')+String(n).replace('-','−')+' '+T.devOrLess);
+    return '<b>'+T.devT+'</b> '+T.act[dv[0]==='P'?'P':dv[0]]+' '+cond+'.';
+  }
+
+  var root, sel=null;
+  function el(h){ var d=document.createElement('div'); d.innerHTML=h; return d.firstElementChild; }
+  function buildTable(kind){
+    var dv=devs(mode==='single');
+    var h='<div class="ctable-wrap"><table class="ctable"><caption>'+T[kind]+'</caption><thead><tr><th class="corner">'+T.you+'</th>';
+    UPS.forEach(function(u){ h+='<th>'+upName(u)+'</th>'; }); h+='</tr></thead><tbody>';
+    ROWS[kind].forEach(function(r){
+      h+='<tr><th scope="row">'+r.l+'</th>';
+      UPS.forEach(function(u){
+        var c=codeFor(kind,r,u), key=r.k+'-'+u, has=!!dv[key];
+        h+='<td class="cc c'+c+(has?' dev':'')+'" data-k="'+r.k+'" data-u="'+u+'" tabindex="0" role="button" aria-label="'+r.l+' vs '+upName(u)+': '+T.legend[c]+'">'+T.code[c]+'</td>';
+      });
+      h+='</tr>';
+    });
+    return h+'</tbody></table></div>';
+  }
+  function render(){
+    var bust=[['2',35.3],['3',37.6],['4',40.3],['5',42.9],['6',42.1],['7',26.0],['8',23.9],['9',23.3],['10',21.3],['A',11.7]];
+    var leg=['H','S','D','Ds','P'].filter(function(c){ return !(mode==='single'&&c==='Ds'); }).map(function(c){ return '<span class="lg"><i class="cc c'+c+'">'+T.code[c]+'</i>'+T.legend[c]+'</span>'; }).join('');
+    root.innerHTML=
+      '<h2>'+T.title+'</h2><p>'+T.intro+'</p>'+
+      '<div class="box"><h3>'+T.howT+'</h3><ol>'+T.how.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol><p class="note">'+T.ex+'</p></div>'+
+      '<div class="seg" id="c-modeseg"><button data-m="shoe" aria-pressed="'+(mode==='shoe')+'">'+T.shoe+'</button><button data-m="single" aria-pressed="'+(mode==='single')+'">'+T.single+'</button></div>'+
+      '<p class="note">'+(mode==='shoe'?T.rulesShoe:T.rulesSingle)+'</p>'+
+      '<div class="legend">'+leg+'</div><p class="note">'+T.dot+' '+T.tap+'</p>'+
+      '<div class="charts">'+buildTable('hard')+buildTable('soft')+buildTable('pairs')+'</div>'+
+      '<div class="cdetail" id="c-detail" aria-live="polite"></div>'+
+      '<div class="box"><h3>'+T.memT+'</h3><ul class="mem">'+T.mem.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'+
+      '<div class="box" id="c-prac"></div>'+
+      '<div class="box"><h3>'+T.bustT+'</h3><div class="bust">'+bust.map(function(b){ var hi=b[1]>=35; return '<div class="bb"><span class="bl">'+b[0]+'</span><div class="bt"><i class="'+(hi?'weak':'')+'" style="width:'+(b[1]/45*100)+'%"></i></div><span class="bv">'+String(b[1]).replace('.',LANG==='es'?',':'.')+'%</span></div>'; }).join('')+'</div><p class="note">'+T.bustN+'</p></div>';
+    root.querySelectorAll('#c-modeseg button').forEach(function(b){ b.addEventListener('click',function(){ mode=b.dataset.m; var s=sel; render(); if(s) select(s.k,s.u,false); }); });
+    root.querySelectorAll('td.cc').forEach(function(td){
+      td.addEventListener('click',function(){ select(td.dataset.k,+td.dataset.u,false); });
+      td.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); select(td.dataset.k,+td.dataset.u,false); } });
+    });
+    pracNew();
+  }
+  function select(k,u,scroll){
+    sel={k:k,u:u};
+    root.querySelectorAll('td.cc.hl,th.hlc,tr.hlr').forEach(function(x){ x.classList.remove('hl','hlc','hlr'); });
+    var td=root.querySelector('td.cc[data-k="'+k+'"][data-u="'+u+'"]'); if(!td) return;
+    td.classList.add('hl'); td.parentNode.classList.add('hlr');
+    var f=findRow(k), c=codeFor(f.kind,f.row,u), dv=devs(mode==='single')[k+'-'+u];
+    var d=root.querySelector('#c-detail');
+    d.innerHTML='<div class="coachbox"><h4>'+T[f.kind]+' · '+T.dealer+' '+upName(u)+'</h4><div class="ch"><i class="cc c'+c+'">'+T.code[c]+'</i> '+T.legend[c]+'</div><p>'+T.hand+' '+handText(f.kind,f.row)+' '+T.vs+' '+upName(u)+'. '+T.det[c]+' '+reasonFor(f.kind,f.row,u,c)+'</p>'+(dv?'<p>'+devText(dv)+'</p>':'')+'</div>';
+    if(scroll) td.scrollIntoView({block:'center',behavior:'smooth'});
+  }
+  // Practice
+  var pr={ok:0,tot:0,streak:0,cur:null};
+  function pracNew(){
+    var kinds=['hard','hard','soft','pairs'], kind=kinds[Math.floor(Math.random()*kinds.length)];
+    var rows=ROWS[kind].filter(function(r){ return kind!=='hard'||(r.t>=9&&r.t<=16); });
+    var row=rows[Math.floor(Math.random()*rows.length)], u=UPS[Math.floor(Math.random()*UPS.length)];
+    pr.cur={kind:kind,row:row,u:u};
+    var box=root.querySelector('#c-prac'), isPair=kind==='pairs';
+    box.innerHTML='<h3>'+T.pracT+'</h3><div class="stats"><div class="stat"><span>'+T.score+'</span><b>'+pr.ok+'/'+pr.tot+'</b></div><div class="stat"><span>'+T.streak+'</span><b>'+pr.streak+'</b></div></div>'+
+      '<p class="pq">'+T.hand+' <b>'+handText(kind,row)+'</b> '+T.vs+' <b>'+upName(u)+'</b>. '+T.pracQ+'</p>'+
+      '<div class="row pbtns">'+['H','S','D'].concat(isPair?['P']:[]).map(function(a){ return '<button class="btn" data-a="'+a+'">'+T.act[a]+'</button>'; }).join('')+'</div><div class="feedback" id="c-fb"></div>';
+    box.querySelectorAll('.pbtns .btn').forEach(function(b){ b.addEventListener('click',function(){ pracAnswer(b.dataset.a); }); });
+  }
+  function pracAnswer(a){
+    var c=pr.cur, code=codeFor(c.kind,c.row,c.u), right=(code==='Ds'?'D':code), box=root.querySelector('#c-prac');
+    pr.tot++; var good=a===right; if(good){ pr.ok++; pr.streak++; } else pr.streak=0;
+    box.querySelectorAll('.pbtns .btn').forEach(function(b){ b.disabled=true; if(b.dataset.a===right) b.classList.add('rec'); });
+    var fb=box.querySelector('#c-fb'); fb.className='feedback '+(good?'ok':'no');
+    fb.innerHTML=(good?T.ok:T.no+' <b>'+T.legend[code]+'</b>.')+' '+reasonFor(c.kind,c.row,c.u,code);
+    box.querySelector('.stats').innerHTML='<div class="stat"><span>'+T.score+'</span><b>'+pr.ok+'/'+pr.tot+'</b></div><div class="stat"><span>'+T.streak+'</span><b>'+pr.streak+'</b></div>';
+    var nb=document.createElement('button'); nb.className='btn primary'; nb.textContent=T.next; nb.style.width='100%'; nb.addEventListener('click',pracNew); box.appendChild(nb);
+    select(c.row.k,c.u,false);
+  }
+  // Called from the Play tab: open the chart on a given hand
+  window.__openChart=function(m,k,u){
+    if(m&&m!==mode){ mode=m; render(); }
+    var t=document.getElementById('t-chart'); if(t) t.click();
+    setTimeout(function(){ select(k,u,true); },60);
+  };
+  window.__chartLabel=T.openChart;
+  root=document.getElementById('chart-root');
+  if(root) render();
 })();
 </script>
 </body>
